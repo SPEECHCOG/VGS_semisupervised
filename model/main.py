@@ -48,3 +48,17 @@ action_parameters = [ number_of_epochs , training_mode, evaluating_mode, saveing
 
 run_training_and_validation = train_validate (model_name, model_subname, input_dim, model_dir, feature_dir, feature_name, training_chunks, validation_chunks, training_params, validation_params, action_parameters, use_pretrained )    
 run_training_and_validation()  
+
+
+
+# method 1
+# number_of_max_pairs = 10
+# for counter_row , row in enumerate(sim):
+#     thresh = row[counter_row]
+#     result = numpy.where(row>thresh)
+#     if numpy.size(result[0]) > number_of_max_pairs:
+#         result = numpy.where(row>thresh + 0.05)
+#         if numpy.size(result[0]) > number_of_max_pairs:
+#             result = numpy.where(row>thresh + 0.1) 
+#     print(numpy.size(result[0]))
+    

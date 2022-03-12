@@ -5,7 +5,7 @@ from matplotlib import pyplot as plt
 
 from tensorflow import keras
 
-from utils import prepare_triplet_data , triplet_loss , calculate_recallat10
+from utils import prepare_triplet_data , prepare_XY , find_pairs, prepare_extra_triplet ,  triplet_loss , calculate_recallat10
 from model import VGS
     
 class train_validate (VGS):
@@ -54,15 +54,16 @@ class train_validate (VGS):
         return saving_params    
 
 
-    def train_model(self, vgs_model):    
-       
+    def train_model(self, vgs_model):           
         [audio_feature_name,visual_feature_name ] = self.feature_name
         [number_of_captions_per_image, length_sequence] = self.training_params
         
         set_of_input_chunks = self.training_chunks
         for chunk_counter, chunk_name in enumerate(set_of_input_chunks): 
             for i_caption in range(number_of_captions_per_image):
-                Ydata_triplet, Xdata_triplet, bin_triplet = prepare_triplet_data (self.feature_dir , visual_feature_name ,  audio_feature_name , chunk_name , i_caption , self.length_sequence)          
+                Ydata, Xdata = prepare_XY (self.feature_dir , visual_feature_name ,  audio_feature_name , chunk_name , i_caption , self.length_sequence)
+                Ydata_triplet, Xdata_triplet, bin_triplet = prepare_triplet_data (Ydata, Xdata)   
+                del Ydata, Xdata
                 print('.......... train chunk ..........' + str(chunk_counter))
                 print('.......... audio caption ........' + str(i_caption))            
                 history = vgs_model.fit([Ydata_triplet, Xdata_triplet ], bin_triplet, shuffle=False, epochs=1,batch_size=120)   
@@ -71,7 +72,75 @@ class train_validate (VGS):
         final_trainloss = history.history['loss'][0]
         return final_trainloss
 
-    
+    def train_extra(self, vgs_model,  visual_embedding_model, audio_embedding_model):      
+        # if self.use_pretrained:
+        #     vgs_model.load_weights(self.model_dir + 'model_weights.h5')
+        
+        [audio_feature_name,visual_feature_name ] = self.feature_name
+        [number_of_captions_per_image, length_sequence] = self.training_params
+        
+        set_of_input_chunks = self.training_chunks
+        for chunk_counter, chunk_name in enumerate(set_of_input_chunks): 
+            for i_caption in range(2):#number_of_captions_per_image):
+                Ydata, Xdata = prepare_XY (self.feature_dir , visual_feature_name ,  audio_feature_name , chunk_name , i_caption , self.length_sequence)
+                visual_embeddings = visual_embedding_model.predict(Ydata)
+                visual_embeddings_mean = numpy.mean(visual_embeddings, axis = 1) 
+                audio_embeddings = audio_embedding_model.predict(Xdata)
+                audio_embeddings_mean = numpy.mean(audio_embeddings, axis = 1) 
+                
+                all_pairs = find_pairs(visual_embeddings_mean, audio_embeddings_mean )
+                Ydata_triplet, Xdata_triplet, bin_triplet = prepare_extra_triplet (all_pairs , Ydata, Xdata)  
+                del Ydata, Xdata
+                print('.......... train chunk ..........' + str(chunk_counter))
+                print('.......... audio caption ........' + str(i_caption))            
+                history = vgs_model.fit([Ydata_triplet, Xdata_triplet ], bin_triplet, shuffle=False, epochs=1,batch_size=120)   
+                del Xdata_triplet
+            del Ydata_triplet      
+        final_trainloss = history.history['loss'][0]
+        return final_trainloss
+
+    def train_orig_and_extra(self, vgs_model,  visual_embedding_model, audio_embedding_model):      
+        # if self.use_pretrained:
+        #     vgs_model.load_weights(self.model_dir + 'model_weights.h5')
+        
+        [audio_feature_name,visual_feature_name ] = self.feature_name
+        [number_of_captions_per_image, length_sequence] = self.training_params
+        
+        set_of_input_chunks = self.training_chunks
+        for chunk_counter, chunk_name in enumerate(set_of_input_chunks): 
+            for i_caption in range(number_of_captions_per_image):
+                
+                Ydata, Xdata = prepare_XY (self.feature_dir , visual_feature_name ,  audio_feature_name , chunk_name , i_caption , self.length_sequence)
+                
+                
+                # train on the extra set
+                visual_embeddings = visual_embedding_model.predict(Ydata)
+                visual_embeddings_mean = numpy.mean(visual_embeddings, axis = 1) 
+                audio_embeddings = audio_embedding_model.predict(Xdata)
+                audio_embeddings_mean = numpy.mean(audio_embeddings, axis = 1) 
+                del visual_embeddings, audio_embeddings
+                
+                all_pairs = find_pairs(visual_embeddings_mean, audio_embeddings_mean )
+                del visual_embeddings_mean, audio_embeddings_mean
+                
+                Ydata_triplet, Xdata_triplet, bin_triplet = prepare_extra_triplet (all_pairs , Ydata, Xdata)  
+                
+                print('.......... train chunk on extra data..........' + str(chunk_counter))
+                print('.......... audio caption ........' + str(i_caption))            
+                vgs_model.fit([Ydata_triplet, Xdata_triplet ], bin_triplet, shuffle=False, epochs=1,batch_size=120) 
+                del Xdata_triplet
+                del Ydata_triplet
+                
+                # train on the original set
+                Ydata_triplet, Xdata_triplet, bin_triplet = prepare_triplet_data (Ydata, Xdata)  
+                del Ydata, Xdata
+                print('.......... train chunk on original data ..........' + str(chunk_counter))
+                print('.......... audio caption ........' + str(i_caption))            
+                history = vgs_model.fit([Ydata_triplet, Xdata_triplet ], bin_triplet, shuffle=False, epochs=1,batch_size=120)  
+           
+        final_trainloss = history.history['loss'][0]
+        return final_trainloss
+        
 
     def evaluate_model (self, vgs_model,  visual_embedding_model, audio_embedding_model ) :
         
@@ -86,18 +155,14 @@ class train_validate (VGS):
 
         for chunk_counter, chunk_name in enumerate(set_of_input_chunks):
             print('.......... validation chunk ..........' + str(chunk_counter))
-            Ydata_triplet, Xdata_triplet, bin_triplet =  prepare_triplet_data (self.feature_dir , visual_feature_name ,  audio_feature_name , chunk_name , i_caption , self.length_sequence)
+            Ydata, Xdata = prepare_XY (self.feature_dir , visual_feature_name ,  audio_feature_name , chunk_name , i_caption , self.length_sequence)
+            Ydata_triplet, Xdata_triplet, bin_triplet = prepare_triplet_data (Ydata, Xdata)  
             val_chunk = vgs_model.evaluate( [Ydata_triplet,Xdata_triplet ],bin_triplet,batch_size=120)    
             epoch_cum_val += val_chunk                  
             #..................................................................... Recall
             if find_recall:
-                           
-                Ydata = Ydata_triplet[0::3]
-                Xdata = Xdata_triplet[0::3]
 
                 number_of_samples = len(Ydata)
-
-                
                 visual_embeddings = visual_embedding_model.predict(Ydata)
                 visual_embeddings_mean = numpy.mean(visual_embeddings, axis = 1) 
 
@@ -192,7 +257,8 @@ class train_validate (VGS):
             print('......... epoch ...........' , str(epoch_counter))
             
             if training_mode:
-                training_output = self.train_model(vgs_model)
+                #training_output = self.train_model(vgs_model)
+                training_output = self.train_orig_and_extra(vgs_model,  visual_embedding_model, audio_embedding_model)
             else:
                 training_output = 0
                 

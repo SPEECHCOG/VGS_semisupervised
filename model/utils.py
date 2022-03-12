@@ -69,23 +69,84 @@ def randOrder(n_t):
         
     return data_orderX,data_orderY
 
+def randOrder_new(all_pairs):
+    n_t = len(all_pairs)
+    
+    random_order_X = numpy.random.permutation(int(n_t))
+    random_order_Y = numpy.random.permutation(int(n_t))
+    
+    data_orderX = []
+    data_orderY = []     
+    for counter, selected_pair in enumerate(all_pairs):
+        
+        data_orderX.append(selected_pair[0])
+        data_orderY.append(selected_pair[1])
+        
+        data_orderX.append(selected_pair[0])
+        data_orderY.append(random_order_Y[counter])
+        
+        data_orderX.append(random_order_X[counter])
+        data_orderY.append(selected_pair[1])
+        
+    return data_orderX,data_orderY
 
-def prepare_triplet_data (featuredir , visual_feature_name ,  audio_feature_name , chunk_name , i_caption , length_sequence):
+
+def prepare_XY (featuredir , visual_feature_name ,  audio_feature_name , chunk_name , i_caption , length_sequence):
      #...................................................................... Y 
     filename = featuredir + visual_feature_name + chunk_name 
     Ydata = loadYdata(filename)
-    n_samples = len(Ydata)
-   
     #.................................................................. X
     filename = featuredir + audio_feature_name + chunk_name
     Xdata = loadXdata(filename , length_sequence , i_caption) 
+
+    return Ydata, Xdata 
+
+    
+def find_pairs(ye, xe):
+    distance_utterance = ss.distance.cdist( ye, xe ,  'cosine')
+    sim = numpy.ones([len(ye),len(xe)]) - distance_utterance
+    all_pairs = []
+    for counter_row , row in enumerate(sim):
+        # thresh is the similarity between original pairs
+        thresh = row[counter_row]
+        result_value = numpy.sort(row)[-1]
+        result_ind = numpy.argsort(row)[-1]
+        if result_value > thresh:
+            all_pairs.append([counter_row,result_ind])
+    return all_pairs
+
+
+def prepare_triplet_data (Ydata, Xdata):
+     #...................................................................... Y 
+    # filename = featuredir + visual_feature_name + chunk_name 
+    # Ydata = loadYdata(filename)
+    # n_samples = len(Ydata)
+   
+    # #.................................................................. X
+    # filename = featuredir + audio_feature_name + chunk_name
+    # Xdata = loadXdata(filename , length_sequence , i_caption) 
+    
+    #..................................... X, Y
+    
+    
+    #..........................................................Triplet
+    n_samples = len(Ydata)
     orderX,orderY = randOrder(n_samples)
+    
     bin_triplet = numpy.array(make_bin_target(n_samples)) 
     Ydata_triplet = Ydata[orderY]
     Xdata_triplet = Xdata[orderX]
     return Ydata_triplet, Xdata_triplet, bin_triplet   
         
-
+def prepare_extra_triplet (all_pairs , Ydata, Xdata):
+    
+    n_samples = len(all_pairs)
+    orderX,orderY = randOrder_new(all_pairs)
+    
+    bin_triplet = numpy.array(make_bin_target(n_samples)) 
+    Ydata_triplet = Ydata[orderY]
+    Xdata_triplet = Xdata[orderX]
+    return Ydata_triplet, Xdata_triplet, bin_triplet 
        
 def triplet_loss(y_true,y_pred):    
     margin = 0.1

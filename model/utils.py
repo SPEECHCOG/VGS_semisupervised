@@ -117,18 +117,7 @@ def find_pairs(ye, xe):
 
 
 def prepare_triplet_data (Ydata, Xdata):
-     #...................................................................... Y 
-    # filename = featuredir + visual_feature_name + chunk_name 
-    # Ydata = loadYdata(filename)
-    # n_samples = len(Ydata)
-   
-    # #.................................................................. X
-    # filename = featuredir + audio_feature_name + chunk_name
-    # Xdata = loadXdata(filename , length_sequence , i_caption) 
-    
-    #..................................... X, Y
-    
-    
+     
     #..........................................................Triplet
     n_samples = len(Ydata)
     orderX,orderY = randOrder(n_samples)

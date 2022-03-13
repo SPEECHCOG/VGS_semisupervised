@@ -111,32 +111,34 @@ class train_validate (VGS):
             for i_caption in range(number_of_captions_per_image):
                 
                 Ydata, Xdata = prepare_XY (self.feature_dir , visual_feature_name ,  audio_feature_name , chunk_name , i_caption , self.length_sequence)
+
+                # train on the original set
+                Ydata_triplet, Xdata_triplet, bin_triplet = prepare_triplet_data (Ydata, Xdata)  
                 
+                print('.......... train chunk on original data ..........' + str(chunk_counter))
+                print('.......... audio caption ........' + str(i_caption))            
+                history = vgs_model.fit([Ydata_triplet, Xdata_triplet ], bin_triplet, shuffle=False, epochs=1,batch_size=120)                 
+                del Xdata_triplet, Ydata_triplet
                 
                 # train on the extra set
                 visual_embeddings = visual_embedding_model.predict(Ydata)
                 visual_embeddings_mean = numpy.mean(visual_embeddings, axis = 1) 
                 audio_embeddings = audio_embedding_model.predict(Xdata)
-                audio_embeddings_mean = numpy.mean(audio_embeddings, axis = 1) 
+                audio_embeddings_mean = numpy.mean(audio_embeddings, axis = 1)               
                 del visual_embeddings, audio_embeddings
                 
                 all_pairs = find_pairs(visual_embeddings_mean, audio_embeddings_mean )
                 del visual_embeddings_mean, audio_embeddings_mean
                 
                 Ydata_triplet, Xdata_triplet, bin_triplet = prepare_extra_triplet (all_pairs , Ydata, Xdata)  
-                
+                del Ydata, Xdata
                 print('.......... train chunk on extra data..........' + str(chunk_counter))
                 print('.......... audio caption ........' + str(i_caption))            
                 vgs_model.fit([Ydata_triplet, Xdata_triplet ], bin_triplet, shuffle=False, epochs=1,batch_size=120) 
-                del Xdata_triplet
-                del Ydata_triplet
+                del Xdata_triplet, Ydata_triplet
                 
-                # train on the original set
-                Ydata_triplet, Xdata_triplet, bin_triplet = prepare_triplet_data (Ydata, Xdata)  
-                del Ydata, Xdata
-                print('.......... train chunk on original data ..........' + str(chunk_counter))
-                print('.......... audio caption ........' + str(i_caption))            
-                history = vgs_model.fit([Ydata_triplet, Xdata_triplet ], bin_triplet, shuffle=False, epochs=1,batch_size=120)  
+                
+ 
            
         final_trainloss = history.history['loss'][0]
         return final_trainloss

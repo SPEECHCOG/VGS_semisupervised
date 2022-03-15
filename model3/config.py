@@ -26,7 +26,7 @@ model_settings = {
 
 feature_settings = {
     "n_caps_per_image":5,
-    "set_of_train_files":['train_ch0', 'train_ch1', 'train_ch2' , 'train_ch3', 'train_ch4', 'train_ch5' , 'train_ch6', 'train_ch7'],
+    "set_of_train_files":['train_ch0', 'train_ch1', 'train_ch2' ],# 'train_ch3', 'train_ch4', 'train_ch5' , 'train_ch6', 'train_ch7'],
     "set_of_validation_files" : ['train_ch8'],
     "length_sequence" : 512,
     "Xshape" : (512,40),

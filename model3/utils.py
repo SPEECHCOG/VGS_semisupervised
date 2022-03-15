@@ -44,8 +44,6 @@ def make_bin_target (n_samples):
     for group_number in range(n_samples):    
         target.append(1)
         target.append(0)
-        target.append(0)
-        target.append(1)
         
     return target
 
@@ -56,7 +54,6 @@ def randOrder_new(all_pairs):
     random_order_Y1 = numpy.random.permutation(int(n_t))
     random_order_X1 = numpy.random.permutation(int(n_t))
     
-    
     # random_order_X2 = numpy.random.permutation(int(n_t))
     # random_order_Y2 = numpy.random.permutation(int(n_t))
     
@@ -64,18 +61,15 @@ def randOrder_new(all_pairs):
     data_orderX = []
          
     for counter in range(n_t):
-        
-        data_orderY.append(counter)
-        data_orderX.append(counter)
-        
-        data_orderY.append(counter)
-        data_orderX.append(random_order_X1[counter])
-        
-        data_orderY.append(random_order_Y1[counter])
-        data_orderX.append(counter)
-  
+
         data_orderY.append(all_pairs[counter][0])
         data_orderX.append(all_pairs[counter][1])
+        
+        data_orderY.append(all_pairs[counter][0])
+        data_orderX.append(random_order_X1[counter])
+        
+  
+
       
         
     return data_orderY , data_orderX
@@ -119,19 +113,19 @@ def prepare_extra_triplet (all_pairs , Ydata, Xdata):
        
 def triplet_loss(y_true,y_pred):    
     margin = 0.1
-    Sp = y_pred[0::4]
-    Sc = y_pred[1::4]
-    Si = y_pred[2::4]  
-    Sp_extra = y_pred[3::4] 
+    Sp = y_pred[0::2]
+    Sc = y_pred[1::2]
     
     # we wante Sp > Sc
     # K.maximum(0.0,(Sc-Sp + margin ))
     
     # similarly we want Sp_extra > Sc
-    return K.sum(K.maximum(0.0,(Sc-Sp + margin )) +  K.maximum(0.0,(Si-Sp + margin )) + 
-                 K.maximum(0.0,(Sc-Sp_extra + margin )) +
-                 K.maximum(0.0,(Sp-Sp_extra - margin )) ,  axis=0) 
-
+    # return K.sum(K.maximum(0.0,(Sc-Sp + margin )) +  K.maximum(0.0,(Si-Sp + margin )) + 
+    #              K.maximum(0.0,(Sc-Sp_extra + margin )) +
+    #              K.maximum(0.0,(Sp-Sp_extra - margin )) ,  axis=0) 
+    
+    return K.sum(K.maximum(0.0,(Sc-Sp + margin )) ,  axis=0)
+    
 
 def calculate_recallat10( embedding_1,embedding_2, sampling_times, number_of_all_audios, pool):   
     recall_all = []

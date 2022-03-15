@@ -47,7 +47,7 @@ validation_params = [ find_recall, save_best_recall ]
 action_parameters = [ number_of_epochs , training_mode, evaluating_mode, saveing_mode ]
 
 run_training_and_validation = train_validate (model_name, model_subname, input_dim, model_dir, feature_dir, feature_name, training_chunks, validation_chunks, training_params, validation_params, action_parameters, use_pretrained )    
-all_apirs = run_training_and_validation.test()
+run_training_and_validation()
 
 # method 1
 # number_of_max_pairs = 10

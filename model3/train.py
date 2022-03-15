@@ -62,10 +62,12 @@ class train_validate (VGS):
         
         set_of_input_chunks = self.training_chunks
         for chunk_counter, chunk_name in enumerate(set_of_input_chunks): 
-            for i_caption in range(number_of_captions_per_image):
+            for i_caption in range(2):#number_of_captions_per_image):
                 
                 Ydata, Xdata = prepare_XY (self.feature_dir , visual_feature_name ,  audio_feature_name , chunk_name , i_caption , self.length_sequence)
-                
+                Ydata [:, :, 0:7, :] = 0
+                Ydata [:, 0:7, :, :] = 0
+                Xdata [:, 128:, :] = 0
                 visual_embeddings = visual_embedding_model.predict(Ydata)
                 visual_embeddings_mean = numpy.mean(visual_embeddings, axis = 1) 
                 audio_embeddings = audio_embedding_model.predict(Xdata)
@@ -79,7 +81,7 @@ class train_validate (VGS):
                 
                 print('.......... train chunk on original data ..........' + str(chunk_counter))
                 print('.......... audio caption ........' + str(i_caption))            
-                history = vgs_model.fit([Ydata_triplet, Xdata_triplet ], bin_triplet, shuffle=False, epochs=1,batch_size=160)                 
+                history = vgs_model.fit([Ydata_triplet, Xdata_triplet ], bin_triplet, shuffle=False, epochs=1,batch_size=80)                 
                 
                 del Xdata_triplet, Ydata_triplet
                 
@@ -215,7 +217,7 @@ class train_validate (VGS):
                 audio_embeddings_mean = numpy.mean(audio_embeddings, axis = 1)               
                 del visual_embeddings, audio_embeddings
                 
-                all_pairs = find_pairs(visual_embeddings_mean, visual_embeddings_mean )
+                all_pairs = find_pairs(visual_embeddings_mean, audio_embeddings_mean )
                 del visual_embeddings_mean, audio_embeddings_mean
         return all_pairs
     

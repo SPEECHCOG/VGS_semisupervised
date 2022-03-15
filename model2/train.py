@@ -65,15 +65,16 @@ class train_validate (VGS):
             for i_caption in range(number_of_captions_per_image):
                 
                 Ydata, Xdata = prepare_XY (self.feature_dir , visual_feature_name ,  audio_feature_name , chunk_name , i_caption , self.length_sequence)
+                v_embeddings_mean1 = numpy.mean(Ydata, axis = -2)
+                v_embeddings_mean = numpy.mean(v_embeddings_mean1, axis = -2)
+                # visual_embeddings = visual_embedding_model.predict(Ydata)
+                # visual_embeddings_mean = numpy.mean(visual_embeddings, axis = 1) 
+                # audio_embeddings = audio_embedding_model.predict(Xdata)
+                # audio_embeddings_mean = numpy.mean(audio_embeddings, axis = 1)               
+                # del visual_embeddings, audio_embeddings
                 
-                visual_embeddings = visual_embedding_model.predict(Ydata)
-                visual_embeddings_mean = numpy.mean(visual_embeddings, axis = 1) 
-                audio_embeddings = audio_embedding_model.predict(Xdata)
-                audio_embeddings_mean = numpy.mean(audio_embeddings, axis = 1)               
-                del visual_embeddings, audio_embeddings
-                
-                all_pairs = find_pairs(visual_embeddings_mean, visual_embeddings_mean )
-                del visual_embeddings_mean, audio_embeddings_mean
+                all_pairs = find_pairs(v_embeddings_mean, v_embeddings_mean )
+                del v_embeddings_mean, v_embeddings_mean1
 
                 Ydata_triplet, Xdata_triplet, bin_triplet = prepare_extra_triplet (all_pairs , Ydata, Xdata) 
                 

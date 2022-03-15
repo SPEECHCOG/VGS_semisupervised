@@ -6,7 +6,7 @@ paths = {
   "model_name": "CNNatt",
   "model_subname": "v0",
   "modeldir": "../../model/model1/",
-  "featuredir": "",
+  "featuredir": "/run/media/hxkhkh/b756dee3-de7e-4cdd-883b-ac95a8d00407/features/coco/SPOKEN-COCO/train/",
   "visual_feature_name" : "vggb5conv3_",
   "audio_feature_name" : "logmel_"
 }
@@ -17,8 +17,8 @@ model_settings = {
   "training_mode": True,
   "evaluating_mode": True,
   "save_model":True,
-  "save_best_recall" : False,
-  "save_best_loss" : True,
+  "save_best_recall" : True,
+  "save_best_loss" : False,
   "find_recall" : True,
   "number_of_epochs" : 100,
 }

@@ -104,9 +104,9 @@ class train_validate (VGS):
         for chunk_counter, chunk_name in enumerate(set_of_input_chunks):
             print('.......... validation chunk ..........' + str(chunk_counter))
             Ydata, Xdata = prepare_XY (self.feature_dir , visual_feature_name ,  audio_feature_name , chunk_name , i_caption , self.length_sequence)
-            Ydata_triplet, Xdata_triplet, bin_triplet = prepare_extra_triplet (Ydata, Xdata)  
-            val_chunk = vgs_model.evaluate( [Ydata_triplet,Xdata_triplet ],bin_triplet,batch_size=160)    
-            epoch_cum_val += val_chunk                  
+            #Ydata_triplet, Xdata_triplet, bin_triplet = prepare_extra_triplet (Ydata, Xdata)  
+            #val_chunk = vgs_model.evaluate( [Ydata_triplet,Xdata_triplet ],bin_triplet,batch_size=160)    
+            #epoch_cum_val += val_chunk                  
             #..................................................................... Recall
             if find_recall:
 
@@ -129,13 +129,14 @@ class train_validate (VGS):
                 epoch_cum_recall_va += recall10_va               
                 del Xdata, audio_embeddings
                 del Ydata, visual_embeddings            
-            del Xdata_triplet,Ydata_triplet
+            #del Xdata_triplet,Ydata_triplet
             
         final_recall_av = epoch_cum_recall_av / (chunk_counter + 1 ) 
         final_recall_va = epoch_cum_recall_va / (chunk_counter + 1 ) 
         final_valloss = epoch_cum_val/ len (set_of_input_chunks) 
         
         validation_output = [final_recall_av, final_recall_va , final_valloss]
+        print(validation_output)
         return validation_output
     
     def save_model(self, vgs_model, initialized_output , training_output, validation_output):

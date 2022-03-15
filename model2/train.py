@@ -72,7 +72,7 @@ class train_validate (VGS):
                 audio_embeddings_mean = numpy.mean(audio_embeddings, axis = 1)               
                 del visual_embeddings, audio_embeddings
                 
-                all_pairs = find_pairs(visual_embeddings_mean, audio_embeddings_mean )
+                all_pairs = find_pairs(visual_embeddings_mean, visual_embeddings_mean )
                 del visual_embeddings_mean, audio_embeddings_mean
 
                 Ydata_triplet, Xdata_triplet, bin_triplet = prepare_extra_triplet (all_pairs , Ydata, Xdata) 

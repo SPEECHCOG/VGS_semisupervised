@@ -129,8 +129,7 @@ def triplet_loss(y_true,y_pred):
     
     # similarly we want Sp_extra > Sc
     return K.sum(K.maximum(0.0,(Sc-Sp + margin )) +  K.maximum(0.0,(Si-Sp + margin )) + 
-                 K.maximum(0.0,(Sc-Sp_extra + margin )) +
-                 K.maximum(0.0,(Sp-Sp_extra - margin )) ,  axis=0) 
+                 K.maximum(0.0,(Sc-Sp_extra + margin )) ,  axis=0) 
 
 
 def calculate_recallat10( embedding_1,embedding_2, sampling_times, number_of_all_audios, pool):   

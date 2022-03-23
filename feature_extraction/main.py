@@ -1,55 +1,33 @@
-
+from extract_features import Features
 ########################## initial configuration ##############################
 
-data_dir = '../../data/'
-feature_dir =  '../../features/SPOKEN-COCO' 
+# import config as cfg
 
-processing_train_data = False
-processing_val_data = True 
-using_shuffled_indices = False
-chunk_len=10000
-dataset = 'SPOKEN-COCO' 
+# paths
+# audio_data_path = cfg.paths['audio_data_path']
+# audio_feature_path = cfg.paths['audio_feature_path']
+# dataset_name = cfg.paths['dataset_name']
+# feature_name = cfg.paths['feature_name']
 
-extracting_audio_features = False
-extracting_visual_features = False
+# # Audio features parameters
+# number_of_mel_bands = cfg.audio_feature_parameters['number_of_mel_bands']
+# window_len_in_seconds = cfg.audio_feature_parameters['window_len_in_seconds']
+# window_hop_in_seconds = cfg.audio_feature_parameters['window_hop_in_seconds']
+# sr_target = cfg.audio_feature_parameters['sr_target']
 
-# Audio features parameters
-number_of_mel_bands = 40     
-window_len_in_ms = 0.025
-window_hop_in_ms = 0.01
-sr_target = 16000
-# Visual features parameters
-vgg_layer_name = 'block5_conv3'    
+# # Visual features parameters
+# vgg_layer_name = cfg.visual_feature_parameters['vgg_layer_name']
+
+# #.............................
+
+
+# extracting_audio_features = cfg.action_parameters['extracting_audio_features']   
+# extracting_visual_features = cfg.action_parameters ['extracting_visual_features']
+# processing_train_data = cfg.action_parameters ['processing_train_data']
+# processing_validation_data = cfg.action_parameters ['processing_validation_data']
 
 ###############################################################################
 
-import os
-from extract_audio_features import  get_spokencoco_wavnames, save_chunked_logmels
-from extract_visual_features import get_spokencoco_imagenames, save_chunked_vggs
-from read_file_names import data_chunker
+obj = Features()
 
-
-if __name__ == '__main__':
-      
-    if dataset == 'SPOKEN-COCO':
-        
-        os.makedirs(feature_dir, exist_ok=1)
-        # reading image file names
-        all_image_files, data_path , output_path = get_spokencoco_imagenames (data_dir , feature_dir , processing_train_data , processing_val_data , using_shuffled_indices)
-        # reading wav file names
-        all_wav_files, all_wav_files_counts, data_path , output_path = get_spokencoco_wavnames (data_dir, feature_dir , processing_train_data , processing_val_data , using_shuffled_indices) 
-        
-
-        if extracting_audio_features:          
-            # Extracting and saving audio features (one chunk at a time)       
-            chuncked_data = data_chunker (all_image_files , chunk_len)    
-            for counter_chunk, data_chunk in  enumerate(chuncked_data):
-                output_name =  output_path + str(counter_chunk) 
-                save_chunked_logmels (data_chunk, data_path, output_name ,vgg_layer_name)
-                
-        if extracting_visual_features :                 
-            # Extracting and saving visual features (one chunk at a time)       
-            chuncked_data = data_chunker (all_image_files , chunk_len)    
-            for counter_chunk, data_chunk in  enumerate(chuncked_data):
-                output_name =  output_path + str(counter_chunk) 
-                save_chunked_vggs (data_chunk, data_path, output_name ,vgg_layer_name)
+output = obj.extract_audio_features("SPOKEN-COCO")

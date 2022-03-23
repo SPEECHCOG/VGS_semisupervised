@@ -3,6 +3,7 @@
 
 """
 import config as cfg
+from utils import calculate_logmels, serialize_features
 
 import os
 import pathlib
@@ -60,12 +61,29 @@ class Features:
   
     
     def find_logmel_features(self, wavfile):
+        logmel_feature = calculate_logmels (wavfile , self.number_of_mel_bands , self.window_len_in_seconds , self.window_hop_in_seconds , self.sr_target)
         logmel = []
         return logmel
     
-    def save_logmel_features (self, logmel , feature_fullpath , save_name):
+    def save_logmel_features (self, input_file , feature_fullpath , save_name):
+        filename = os.path.join(feature_fullpath,save_name)
+        serialize_features (input_file, filename)
         pass
-    
+    def test (self, dataset_name):
+        self.read_file_paths (dataset_name)
+        
+        
+        if dataset_name == "SPOKEN-COCO":
+            folders = os.listdir(self.audio_path)
+            for folder_name in folders:
+                
+                feature_fullpath = os.path.join(self.feature_path, folder_name)  
+                os.makedirs(feature_fullpath, exist_ok= True)
+                
+                files = os.listdir(os.path.join(self.audio_path,folder_name))
+                for file_name in files[0:1]:
+                    wavfile = os.path.join(self.audio_path, folder_name , file_name)
+        return wavfile
     def extract_audio_features (self, dataset_name):
         self.read_file_paths (dataset_name)
         
@@ -81,7 +99,7 @@ class Features:
                 for file_name in files:
                     wavfile = os.path.join(self.audio_path, folder_name , file_name)
                     logmel = self.find_logmel_features(wavfile)
-                    save_name = file_name
+                    save_name = file_name[0:-4] 
                     self.save_logmel_features(logmel, feature_fullpath , save_name)
     
     def __call__(self):

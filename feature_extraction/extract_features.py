@@ -12,12 +12,6 @@ class Features:
     
     def __init__(self):
     
-        # self.paths = paths
-        # self.audio_feature_parameters = audio_feature_parameters
-        # self.visual_feature_parameters = visual_feature_parameters
-        # self.action_parameters = action_parameters
-        
-
         # paths
         self.audio_data_path = cfg.paths['audio_data_path']
         self.audio_feature_path = cfg.paths['audio_feature_path']
@@ -71,7 +65,6 @@ class Features:
        
     def extract_audio_features (self, dataset_name):
         self.read_file_paths (dataset_name)
-        
         
         if dataset_name == "SPOKEN-COCO":
             folders = os.listdir(self.audio_path)

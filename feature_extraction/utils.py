@@ -69,13 +69,13 @@ def serialize_features (input_file, filename):
     pickle.dump(input_file ,outfile , protocol=pickle.HIGHEST_PROTOCOL)
     outfile.close()
 
-wavfile = '/tuni/groups/3101050_Specog/corpora/SPOKEN-COCO/wavs/val/1/m3zbehjp85if0v-3DUZQ9U6SMOQX7F2O8QQOO22HN5VSO_128372_441816.wav'
+# wavfile = '/tuni/groups/3101050_Specog/corpora/SPOKEN-COCO/wavs/val/1/m3zbehjp85if0v-3DUZQ9U6SMOQX7F2O8QQOO22HN5VSO_128372_441816.wav'
 
-logmel0 = calculate_logmels0 (wavfile , 40 , 0.025 , 0.010 , 16000)
-logmel1 = calculate_logmels1 (wavfile , 40 , 0.025 , 0.010 , 16000)
+# logmel0 = calculate_logmels0 (wavfile , 40 , 0.025 , 0.010 , 16000)
+# logmel1 = calculate_logmels1 (wavfile , 40 , 0.025 , 0.010 , 16000)
 
-from matplotlib import pyplot as plt
-plt.subplot(1,2,1)
-plt.imshow(logmel0)
-plt.subplot(1,2,2)
-plt.imshow(logmel1)
+# from matplotlib import pyplot as plt
+# plt.subplot(1,2,1)
+# plt.imshow(logmel0)
+# plt.subplot(1,2,2)
+# plt.imshow(logmel1)

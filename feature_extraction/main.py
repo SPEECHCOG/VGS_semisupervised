@@ -30,4 +30,4 @@ from extract_features import Features
 
 obj = Features()
 
-output = obj.test("SPOKEN-COCO")
+output = obj.extract_audio_features("SPOKEN-COCO")

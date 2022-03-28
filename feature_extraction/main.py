@@ -29,5 +29,7 @@ from extract_features import Features
 ###############################################################################
 
 obj = Features()
+#
+obj.extract_visual_features("SPOKEN-COCO")
 
-output = obj.extract_audio_features("SPOKEN-COCO")
+

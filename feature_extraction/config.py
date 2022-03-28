@@ -3,10 +3,11 @@
 
 
 paths = {
-  "audio_data_path": "/tuni/groups/3101050_Specog/corpora/SPOKEN-COCO/",
-  "audio_feature_path": "../../features/",
+  "path_SPOKENCOCO": "/tuni/groups/3101050_Specog/corpora/SPOKEN-COCO/",
+  "path_MSCOCO" : "/tuni/groups/3101050_Specog/corpora/Image_COCO",
+  "feature_path_SPOKENCOCO": "../../features/SPOKENCOCO/",
+  "feature_path_MSCOCO": "../../features/MSCOCO/",
   "dataset_name" : "SPOKEN-COCO",
-  "feature_name" : "logmel40_"
 }
 
 
@@ -19,7 +20,8 @@ audio_feature_parameters = {
     }
 
 visual_feature_parameters = {
-    "vgg_layer_name" : 'block5_conv3'
+    "visual_feature_name" : "vgg",
+    "visual_feature_subname" : 'block5_conv3'
     }
 
 action_parameters = {

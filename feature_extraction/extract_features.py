@@ -8,6 +8,9 @@ from data_preprocessing import get_SPOKENCOCO_imagenames
 import os
 import pathlib
 
+from keras.models import Model
+from keras.applications.vgg16 import VGG16
+
 class Features:
     
     def __init__(self):
@@ -54,25 +57,24 @@ class Features:
                self.audio_path = os.path.join( self.path_SPOKENCOCO , 'wavs' , 'val')
                self.feature_path_audio = os.path.join(self.feature_path_SPOKENCOCO , "val")
                self.feature_path_visual = os.path.join(self.feature_path_MSCOCO , "val")
-       
-       
-               
-    def find_visual_features (self, image_fullpath):
-        if self.visual_feature_name == 'vgg' and self.visual_feature_subname == 'block5_conv3':
-            vf_output = calculate_vgg_b5 (image_fullpath)
-        return vf_output
 
         
     def extract_visual_features(self, dataset_name):
+
         self.read_file_paths (dataset_name)
         os.makedirs(self.feature_path_visual , exist_ok= True)
         
+        if self.visual_feature_name == 'vgg' and self.visual_feature_subname == 'block5_conv3':
+            model = VGG16()
+            layer_name = 'block5_conv3'  
+            model = Model(inputs=model.input,outputs=model.get_layer(layer_name).output)
+            
         if dataset_name == "SPOKEN-COCO":
             image_fullnames = get_SPOKENCOCO_imagenames (self.json_file)
             for image_fullname in image_fullnames:
                 
                 image_fullpath = os.path.join(self.path_MSCOCO, image_fullname)
-                vf_output = self.find_visual_features(image_fullpath)
+                vf_output = calculate_vgg_b5 (model, image_fullpath)
                 
                 image_name = image_fullname.split('/')[1]
                 # remove ".jpg" from name
@@ -83,8 +85,7 @@ class Features:
         logmel_feature = calculate_logmels1 (wavfile , self.number_of_mel_bands , self.window_len_in_seconds , self.window_hop_in_seconds , self.sr_target)
         return logmel_feature
     
-
-       
+     
     def extract_audio_features (self, dataset_name):
         self.read_file_paths (dataset_name)
         

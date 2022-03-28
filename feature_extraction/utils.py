@@ -8,10 +8,8 @@ import numpy
 import librosa
 
 import cv2
-from tensorflow.keras.applications.vgg16 import VGG16
-from tensorflow.keras.applications.vgg16 import preprocess_input
-from tensorflow.keras.models import Model
 
+from keras.applications.vgg16 import preprocess_input
 
 import tensorflow as tf
 config = tf.ConfigProto()
@@ -20,11 +18,10 @@ config.gpu_options.per_process_gpu_memory_fraction=0.7
 sess = tf.Session(config=config) 
 
 
-def calculate_vgg_b5 (image_fullpath):
+def calculate_vgg_b5 (model, image_fullpath):
     print(image_fullpath)
-    layer_name = 'block5_conv3'
-    model = VGG16()  
-    model = Model(inputs=model.input,outputs=model.get_layer(layer_name).output)
+    
+
                 
     image_original = cv2.imread(image_fullpath)
     image_resized = cv2.resize(image_original,(224,224))

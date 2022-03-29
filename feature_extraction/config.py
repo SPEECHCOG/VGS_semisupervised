@@ -27,6 +27,6 @@ visual_feature_parameters = {
 action_parameters = {
     "extracting_audio_features" : False,
     "extracting_visual_features" : False,
-    "processing_train_data" : True,
-    "processing_validation_data" : False
+    "processing_train_data" : False,
+    "processing_validation_data" : True
     }

@@ -104,4 +104,10 @@ class Features:
                     self.save_features(logmel, feature_fullpath , save_name)
     
     def __call__(self):
-        pass
+        
+        if self.extracting_audio_features:
+            self.extract_audio_features(self.dataset_name)
+        elif self.extracting_visual_features:
+            self.extract_visual_features(self.dataset_name)
+            
+            

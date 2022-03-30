@@ -1,15 +1,9 @@
 from extract_features import Features
 
 
-av_features = Features()
-dataset_name = "SPOKEN-COCO"
+av_feature_extractor = Features()
+av_feature_extractor
 
-# for audio feature extraction run:
-    
-#av_features.extract_audio_features(dataset_name)
 
-# for visual feature extraction run:
-    
-#av_features.extract_visual_features(dataset_name)
 
 

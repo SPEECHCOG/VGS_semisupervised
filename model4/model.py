@@ -9,13 +9,10 @@ from tensorflow.keras.layers import Softmax, Permute, AveragePooling1D, Concaten
 
 class VGS:
     
-    def __init__(self,model_name, model_subname, input_dim):
+    def __init__(self):
+        pass
         
-        self.model_name = model_name
-        self.model_subname = model_subname
-        self.input_dim = input_dim
-        
-    def build_audio_model (self ):
+    def build_audio_model (self , input_dim):
         
         [Xshape, Yshape] = self.input_dim
         dropout_size = 0.3
@@ -54,7 +51,7 @@ class VGS:
         return audio_sequence , out_audio_channel , audio_model
     
         
-    def build_visual_model (self):
+    def build_visual_model (self, input_dim):
         
         [Xshape, Yshape] = self.input_dim
         dropout_size = 0.3
@@ -71,19 +68,19 @@ class VGS:
         visual_model = Model(inputs= visual_sequence, outputs = out_visual_channel )
         return visual_sequence , out_visual_channel , visual_model
    
-    def build_model (self):
-        if self.model_name == 'CNN0':
-            final_model, visual_embedding_model, audio_embedding_model = self.CNN0()
-        elif self.model_name == 'CNNatt':
-            final_model, visual_embedding_model, audio_embedding_model = self.CNNatt()
+    def build_model (self, model_name, model_subname, input_dim):
+        if model_name == 'CNN0':
+            final_model, visual_embedding_model, audio_embedding_model = self.CNN0(model_subname , input_dim)
+        elif model_name == 'CNNatt':
+            final_model, visual_embedding_model, audio_embedding_model = self.CNNatt(model_subname , input_dim)
             
         
         return final_model, visual_embedding_model, audio_embedding_model
     
-    def CNNatt (self):
-        #model_subname = self.model_subname
-        audio_sequence , out_audio_channel , audio_model = self.build_audio_model ()
-        visual_sequence , out_visual_channel , visual_model = self. build_visual_model ()          
+    def CNNatt (self , model_subname , input_dim):
+        
+        audio_sequence , out_audio_channel , audio_model = self.build_audio_model ( input_dim)
+        visual_sequence , out_visual_channel , visual_model = self. build_visual_model ( input_dim)          
         
         A = out_audio_channel
         I = out_visual_channel
@@ -147,10 +144,10 @@ class VGS:
 
         return final_model, visual_embedding_model, audio_embedding_model
          
-    def CNN0 (self):
+    def CNN0 (self, model_subname, input_dim):
     
-        audio_sequence , out_audio_channel , audio_model = self.build_audio_model ()
-        visual_sequence , out_visual_channel , visual_model = self. build_visual_model ()  
+        audio_sequence , out_audio_channel , audio_model = self.build_audio_model ( input_dim)
+        visual_sequence , out_visual_channel , visual_model = self. build_visual_model ( input_dim)  
         
         # post-processing for Audio and Image channels (Dense + L2 norm layers)
         
@@ -168,11 +165,11 @@ class VGS:
         
         def final_layer(tensor):
             x= tensor 
-            if self.model_subname == 'sisa':
+            if model_subname == 'sisa':
                 score = K.mean( (K.mean(x, axis=1)), axis=-1)
-            elif self.model_subname == 'misa':
+            elif model_subname == 'misa':
                 score = K.mean( (K.mean(x, axis=1)), axis=-1)
-            elif self.model_subname == 'sima':
+            elif model_subname == 'sima':
                 score = K.mean( (K.mean(x, axis=1)), axis=-1)         
             output_score = Reshape([1],name='reshape_final')(score)          
             return output_score

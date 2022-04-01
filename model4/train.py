@@ -4,8 +4,8 @@ import scipy.io
 from matplotlib import pyplot as plt
 
 from tensorflow import keras
-from data_preprocessing import prepare_XY , read_file_names, shuffle_file_names
-from utils import  prepare_triplet ,  triplet_loss , calculate_recallat10
+from data_preprocessing import prepare_XY , read_file_names, chunk_file_names
+from utils import  prepare_triplet_data ,  triplet_loss , calculate_recallat10
 from model import VGS
 import config as cfg
     
@@ -17,6 +17,7 @@ class train_validate (VGS):
         # paths
         self.feature_path_SPOKENCOCO = cfg.paths['feature_path_SPOKENCOCO']
         self.feature_path_MSCOCO = cfg.paths['feature_path_MSCOCO']
+        self.json_path_SPOKENCOCO = cfg.paths["json_path_SPOKENCOCO"]
         self.dataset_name = cfg.paths['dataset_name']
         self.model_dir = cfg.paths['modeldir']
 
@@ -33,15 +34,18 @@ class train_validate (VGS):
         self.chunk_length = cfg.action_parameters['chunk_length']
         
         # model setting
-        self.model_name = cfg.model_settings ['model_name']
-        self.model_subname = cfg.model_settings ['model_subname']
-        self.length_sequence = cfg.model_settings['length_sequence']
-        self.Xshape = cfg.model_settings['Xshape']
-        self.Yshape = cfg.model_settings['Yshape']
+        self.model_name = cfg.feature_settings ['model_name']
+        self.model_subname = cfg.feature_settings ['model_subname']
+        self.length_sequence = cfg.feature_settings['length_sequence']
+        self.Xshape = cfg.feature_settings['Xshape']
+        self.Yshape = cfg.feature_settings['Yshape']
         self.input_dim = [self.Xshape,self.Yshape] 
         
         self.length_sequence = self.Xshape[0]
         
+        
+        
+        self.split = 'train'
         super().__init__() 
         
         
@@ -71,27 +75,15 @@ class train_validate (VGS):
         saving_params = [allepochs_valloss, allepochs_trainloss, all_avRecalls, all_vaRecalls, val_indicator , recall_indicator ]       
         return saving_params 
     
-    def prepare_chunked_names (self):
-        # 1. read all data names
-        # 2. shuffle data names
-        # 3. divide into chunks
-        if self.dataset_name == "SPOKEN-COCO":
 
-            feature_path_audio = os.path.join(self.feature_path_SPOKENCOCO , self.split)
-            feature_path_image = os.path.join(self.feature_path_MSCOCO , self.split)
-            Ydata_all_initial, Xdata_all_initial = read_file_names (feature_path_audio, feature_path_image ) 
-            Ydata_all, Xdata_all = shuffle_file_names (Ydata_all_initial, Xdata_all_initial)
-            data_length = len(Ydata_all)
-            data_all = []
-            for start_chunk in range(0, data_length ,self.chunk_length):
-                Ydata_chunk = Ydata_all [start_chunk:start_chunk +self.chunk_length ]
-                # Xdata contains 5 captions per item
-                Xdata_chunk = Xdata_all [start_chunk:start_chunk +self.chunk_length ]
-                chunk = {}
-                chunk['Ydata'] = Ydata_chunk
-                chunk['Xdata'] = Xdata_chunk
-                data_all.append(chunk)
-        return data_all
+    def prepare_chunked_names (self, split ):
+        split = self.split
+        if self.dataset_name == "SPOKEN-COCO":
+            Ydata_all, Xdata_all , Zdata_all = read_file_names (self.json_path_SPOKENCOCO, self.split , shuffle = False )             
+            # self.feature_path_audio = os.path.join(self.feature_path_SPOKENCOCO , self.split)
+            # self.feature_path_image = os.path.join(self.feature_path_MSCOCO , self.split)
+            # data_chunked = chunk_file_names (Ydata_all, Xdata_all , Zdata_all , self.chunk_length)
+        return Ydata_all, Xdata_all , Zdata_all
     
     def train_model(self, vgs_model): 
         self.split = 'train'

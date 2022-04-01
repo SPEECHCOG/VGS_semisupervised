@@ -5,7 +5,7 @@
 paths = {
   "feature_path_SPOKENCOCO": "../../features/SPOKENCOCO/",
   "feature_path_MSCOCO": "../../features/MSCOCO/",
-  "json_path_SPOKENCOCO" : "/tuni/groups/3101050_Specog/corpora/SPOKEN-COCO/SpokenCOCO_train.json",
+  "json_path_SPOKENCOCO" : "/tuni/groups/3101050_Specog/corpora/SPOKEN-COCO/",
   "dataset_name" : "SPOKEN-COCO",
   "modeldir": "../../model/model4/",
   "featuredir": "/run/media/hxkhkh/khazar_data_1/khazar/features/coco/SPOKEN-COCO/",

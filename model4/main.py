@@ -15,7 +15,7 @@ from train import train_validate
 
 
 run_training_and_validation = train_validate ()
-run_training_and_validation()
+y,x,z = run_training_and_validation.prepare_chunked_names(split= 'train')
 
 # method 1
 # number_of_max_pairs = 10

@@ -6,27 +6,8 @@ import json
 import os
 import numpy
 import pickle
+from sklearn.utils import shuffle
 
-# file = "/tuni/groups/3101050_Specog/corpora/SPOKEN-COCO/SpokenCOCO_train.json"
-# infile = open(file, 'rb')
-# data = json.load(infile)
-# infile.close()
-
-# train_data = data['data']
-
-# train_image_paths = []
-# train_image_captions = []
-# for item in train_data:
-#     img_fullname = item['image']
-#     img_data = item['captions']
-    
-#     train_image_paths.append(img_fullname)
-#     train_image_captions.append(img_data)
-    
-    
-    
-    # img_name = img_fullname.split('/')[1]
-    # outfile_name = img_name[:-4]
     
     
 def get_SPOKENCOCO_data (json_file , split):
@@ -66,35 +47,66 @@ def get_SPOKENCOCO_data (json_file , split):
 
 
 
-json_file = "/tuni/groups/3101050_Specog/corpora/SPOKEN-COCO/SpokenCOCO_train.json"
-split = 'train'
-output = get_SPOKENCOCO_data (json_file , 'train')
+
 
 feature_path_SPOKENCOCO = "../../features/SPOKENCOCO/"
 feature_path_MSCOCO = "../../features/MSCOCO/"
+    
 
-def prepare_chunked_names (self):
-    # 1. read all data names
-    # 2. shuffle data names
-    # 3. divide into chunks
-    if self.dataset_name == "SPOKEN-COCO":
+def read_file_names (path_json, split, shuffle = True ):
+    
+    if split == 'train':
+        json_name = 'SpokenCOCO_train.json'
+    elif split == 'val':
+        json_name = 'SpokenCOCO_val.json'
+    json_file = os.path.join(path_json , json_name)
+    
+    data = get_SPOKENCOCO_data (json_file , split)
+    
+    Ydata_all_initial = []
+    Xdata_all_initial = []
+    Zdata_all_initial = []
+     
+    #iterating over images
+    for element in data:
+        
+        audio_data = element['audio_data']
+        #iterating over captions per image
+        for caption_item in audio_data:
+            Ydata_all_initial.append(element['visual_feature'])
+            Xdata_all_initial.append(caption_item['audio_feature'])
+            Zdata_all_initial.append(caption_item['text_caption'])
+            
+    if shuffle:
+        inds_shuffled = shuffle(numpy.arange(len(data)))       
+    else:
+        inds_shuffled = numpy.arange(len(data))
+        
+    # Ydata_all_initial = numpy.array(Ydata_all_initial)
+    # Xdata_all_initial = numpy.array(Xdata_all_initial)
+    # Zdata_all_initial = numpy.array(Zdata_all_initial) 
+    
+    # Ydata_all = Ydata_all_initial[inds_shuffled]
+    # Xdata_all = Xdata_all_initial[inds_shuffled]
+    # Zdata_all = Zdata_all_initial[inds_shuffled]
+        
+    return Ydata_all_initial, Xdata_all_initial , Zdata_all_initial    
 
-        feature_path_audio = os.path.join(self.feature_path_SPOKENCOCO , self.split)
-        feature_path_image = os.path.join(self.feature_path_MSCOCO , self.split)
-        data_path_json = self.json_path_SPOKENCOCO
-        Ydata_all_initial, Xdata_all_initial = read_file_names (feature_path_audio, feature_path_image, data_path_json ) 
-        Ydata_all, Xdata_all = shuffle_file_names (Ydata_all_initial, Xdata_all_initial)
-        data_length = len(Ydata_all)
-        data_all = []
-        for start_chunk in range(0, data_length ,self.chunk_length):
-            Ydata_chunk = Ydata_all [start_chunk:start_chunk +self.chunk_length ]
-            # Xdata contains 5 captions per item
-            Xdata_chunk = Xdata_all [start_chunk:start_chunk +self.chunk_length ]
-            chunk = {}
-            chunk['Ydata'] = Ydata_chunk
-            chunk['Xdata'] = Xdata_chunk
-            data_all.append(chunk)
-    return data_all
+def chunk_file_names (Ydata_all, Xdata_all , Zdata_all , chunk_length):
+    
+    data_length = len(Ydata_all)
+    data_chunked = []
+    for start_chunk in range(0, data_length , chunk_length):
+        Ydata_chunk = Ydata_all [start_chunk:start_chunk +chunk_length ]
+        Xdata_chunk = Xdata_all [start_chunk:start_chunk +chunk_length ]
+        Zdata_chunk = Zdata_all [start_chunk:start_chunk +chunk_length ]
+        
+        chunk = {}
+        chunk['Ydata'] = Ydata_chunk
+        chunk['Xdata'] = Xdata_chunk
+        chunk['Zdata'] = Zdata_chunk
+        data_chunked.append(chunk)
+        return data_chunked
     
     
 def loadXdata (filename, len_of_longest_sequence , i_cap):
@@ -131,11 +143,7 @@ def preparY (dict_vgg):
     return Y
 
 
-def shuffle_file_names (Ydata_all_initial, Xdata_all_initial):
-    pass
 
-def read_file_names (feature_path_audio, feature_path_image ):
-    pass
 
 
 def prepare_XY (Ydata_names, Xdata_names):

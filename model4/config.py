@@ -22,8 +22,7 @@ action_parameters = {
   "save_best_loss" : True,
   "find_recall" : False,
   "number_of_epochs" : 10,
-  "n_caps_per_image":5,
-  "chunk_length":10000
+  "chunk_length":2000
 }
 
 feature_settings = {

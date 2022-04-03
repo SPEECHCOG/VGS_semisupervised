@@ -15,16 +15,6 @@ from train import train_validate
 
 
 run_training_and_validation = train_validate ()
-y,x,z = run_training_and_validation.prepare_chunked_names(split= 'train')
+Ynames_all, Xnames_all , Znames_all = run_training_and_validation.train_model()
 
-# method 1
-# number_of_max_pairs = 10
-# for counter_row , row in enumerate(sim):
-#     thresh = row[counter_row]
-#     result = numpy.where(row>thresh)
-#     if numpy.size(result[0]) > number_of_max_pairs:
-#         result = numpy.where(row>thresh + 0.05)
-#         if numpy.size(result[0]) > number_of_max_pairs:
-#             result = numpy.where(row>thresh + 0.1) 
-#     print(numpy.size(result[0]))
     

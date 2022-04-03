@@ -4,7 +4,7 @@ import scipy.io
 from matplotlib import pyplot as plt
 
 from tensorflow import keras
-from data_preprocessing import prepare_XY , read_file_names, chunk_file_names
+from data_preprocessing import prepare_XY , read_feature_filenames,  expand_feature_filenames
 from utils import  prepare_triplet_data ,  triplet_loss , calculate_recallat10
 from model import VGS
 import config as cfg
@@ -30,7 +30,6 @@ class train_validate (VGS):
         self.save_best_loss = cfg.action_parameters['save_best_loss']
         self.find_recall = cfg.action_parameters['find_recall']
         self.number_of_epochs = cfg.action_parameters['number_of_epochs']
-        self.number_of_captions_per_image = cfg.action_parameters['n_caps_per_image']
         self.chunk_length = cfg.action_parameters['chunk_length']
         
         # model setting
@@ -74,36 +73,51 @@ class train_validate (VGS):
             
         saving_params = [allepochs_valloss, allepochs_trainloss, all_avRecalls, all_vaRecalls, val_indicator , recall_indicator ]       
         return saving_params 
-    
 
-    def prepare_chunked_names (self, split ):
+    def prepare_chunked_names (self):
         split = self.split
         if self.dataset_name == "SPOKEN-COCO":
-            Ydata_all, Xdata_all , Zdata_all = read_file_names (self.json_path_SPOKENCOCO, self.split , shuffle = False )             
-            # self.feature_path_audio = os.path.join(self.feature_path_SPOKENCOCO , self.split)
-            # self.feature_path_image = os.path.join(self.feature_path_MSCOCO , self.split)
-            # data_chunked = chunk_file_names (Ydata_all, Xdata_all , Zdata_all , self.chunk_length)
-        return Ydata_all, Xdata_all , Zdata_all
+            feature_names = read_feature_filenames (self.json_path_SPOKENCOCO, split , shuffle_data = False )  
+            #feature_names_chunked = chunk_feature_filenames (feature_names, self.chunk_length)
+            n = len(feature_names)
+            Ynames_all, Xnames_all , Znames_all = [],[],[]
+
+            for start_chunk in range(0, n , self.chunk_length):
+                end_chunk = start_chunk + self.chunk_length
+                chunk = feature_names [start_chunk:end_chunk ]            
+                Ynames, Xnames , Znames = expand_feature_filenames(chunk )
+                Ynames_all.append(Ynames)
+                Xnames_all.append(Xnames)
+                Znames_all.append(Znames)
+        return Ynames_all, Xnames_all , Znames_all
     
-    def train_model(self, vgs_model): 
+    def set_feature_paths (self):
+        if self.dataset_name == "SPOKEN-COCO":
+            self.feature_path_audio = self.feature_path_SPOKENCOCO 
+            self.feature_path_image = self.feature_path_MSCOCO 
+        
+    def train_model(self): 
         self.split = 'train'
         if self.use_pretrained:
-            vgs_model.load_weights(self.model_dir + 'model_weights.h5')
-        self.chunk_length       
-        data = self.prepare_chunked_names()
-        
-        for counter,chunk in enumerate(data):
-            Ydata_names = chunk['Ydata']
-            Xdata_names_all_captions = chunk['Xdata']
+            self.vgs_model.load_weights(self.model_dir + 'model_weights.h5')
+               
+        Ynames_all, Xnames_all , Znames_all = self.prepare_chunked_names()
+        number_of_chunks = len(Ynames_all)
+        for counter in range(number_of_chunks):
+            Ynames = Ynames_all [counter]
+            Xnames = Xnames_all [counter]
+            Znames = Znames_all [counter]
             
-            for Xdata_names in Xdata_names_all_captions:
-                Ydata, Xdata = prepare_XY (Ydata_names, Xdata_names)
-                Ydata_triplet, Xdata_triplet, bin_triplet = prepare_triplet (Ydata, Xdata) 
-                vgs_model.fit([Ydata_triplet, Xdata_triplet ], bin_triplet, shuffle=False, epochs=1,batch_size=160)                 
+            Ydata, Xdata = prepare_XY (Ynames, Xnames , self.feature_path_audio , self.feature_path_image )
+                
+            Ydata_triplet, Xdata_triplet, bin_triplet = prepare_triplet_data (Ydata, Xdata) 
+            self.vgs_model.fit([Ydata_triplet, Xdata_triplet ], bin_triplet, shuffle=False, epochs=1,batch_size=160)                 
         
-                del Xdata_triplet, Ydata_triplet
+            del Ydata, Xdata, Xdata_triplet, Ydata_triplet
+        
+       
 
-    def evaluate_model (self, vgs_model,  visual_embedding_model, audio_embedding_model ) :
+    def evaluate_model (self) :
         self.split = 'val'        
         epoch_cum_val = 0
         epoch_cum_recall_av = 0
@@ -118,10 +132,10 @@ class train_validate (VGS):
             if self.find_recall:
 
                 number_of_samples = len(Ydata)
-                visual_embeddings = visual_embedding_model.predict(Ydata)
+                visual_embeddings = self.visual_embedding_model.predict(Ydata)
                 visual_embeddings_mean = numpy.mean(visual_embeddings, axis = 1) 
 
-                audio_embeddings = audio_embedding_model.predict(Xdata)
+                audio_embeddings = self.audio_embedding_model.predict(Xdata)
                 audio_embeddings_mean = numpy.mean(audio_embeddings, axis = 1)                 
                 
                 
@@ -146,7 +160,7 @@ class train_validate (VGS):
         print(validation_output)
         return validation_output
     
-    def save_model(self, vgs_model, initialized_output , training_output, validation_output):
+    def save_model(self, initialized_output , training_output, validation_output):
         
         os.makedirs(self.model_dir, exist_ok=1)
         [allepochs_valloss, allepochs_trainloss, all_avRecalls, all_vaRecalls, val_indicator , recall_indicator ] = initialized_output
@@ -160,13 +174,13 @@ class train_validate (VGS):
                 recall_indicator = epoch_recall
                 # weights = vgs_model.get_weights()
                 # vgs_model.set_weights(weights)
-                vgs_model.save_weights('%smodel_weights.h5' % self.model_dir)
+                self.vgs_model.save_weights('%smodel_weights.h5' % self.model_dir)
         else :
             if epoch_valloss <= val_indicator: 
                 val_indicator = epoch_valloss
                 # weights = vgs_model.get_weights()
                 # vgs_model.set_weights(weights)
-                vgs_model.save_weights('%smodel_weights.h5' % self.model_dir)
+                self.vgs_model.save_weights('%smodel_weights.h5' % self.model_dir)
                       
         allepochs_trainloss.append(training_output)  
         allepochs_valloss.append(epoch_valloss)
@@ -195,15 +209,15 @@ class train_validate (VGS):
     
     def __call__(self):
     
-        vgs_model, visual_embedding_model, audio_embedding_model = self.build_model(self.model_name, self.model_subname, self.input_dim)
-        vgs_model.compile(loss=triplet_loss, optimizer= keras.optimizers.Adam(lr=1e-04))
-        print(vgs_model.summary())
+        self.vgs_model, self.visual_embedding_model, self.audio_embedding_model = self.build_model(self.model_name, self.model_subname, self.input_dim)
+        self.vgs_model.compile(loss=triplet_loss, optimizer= keras.optimizers.Adam(lr=1e-04))
+        print(self.vgs_model.summary())
   
         initialized_output = self.initialize_model_parameters()
         
   
         if self.use_pretrained:
-            vgs_model.load_weights(self.model_dir + 'model_weights.h5')
+            self.vgs_model.load_weights(self.model_dir + 'model_weights.h5')
 
         for epoch_counter in numpy.arange(self.number_of_epochs):
             
@@ -211,17 +225,17 @@ class train_validate (VGS):
             
             if self.training_mode:
                 #training_output = self.train_model(vgs_model)
-                training_output = self.train_model(vgs_model,  visual_embedding_model, audio_embedding_model)
+                training_output = self.train_model()
             else:
                 training_output = 0
                 
             if self.evaluating_mode:
                 
-                validation_output = self.evaluate_model(vgs_model,  visual_embedding_model, audio_embedding_model )
+                validation_output = self.evaluate_model()
             else: 
                 validation_output = [0, 0 , 0 ]
                 
             if self.saving_mode:
-                self.save_model(vgs_model,initialized_output, training_output, validation_output)
+                self.save_model(initialized_output, training_output, validation_output)
                 
 

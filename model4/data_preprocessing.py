@@ -16,8 +16,7 @@ def get_SPOKENCOCO_data (json_file , split):
     content = json.load(infile)
     infile.close()
 
-    json_data = content['data']
-    
+    json_data = content['data']   
     data = []
     #iterating over images
     for json_item in json_data:
@@ -46,14 +45,27 @@ def get_SPOKENCOCO_data (json_file , split):
     return data 
 
 
-
-
-
 feature_path_SPOKENCOCO = "../../features/SPOKENCOCO/"
 feature_path_MSCOCO = "../../features/MSCOCO/"
     
-
-def read_file_names (path_json, split, shuffle = True ):
+def expand_feature_filenames (chunk):
+    
+    Ydata = []
+    Xdata = []
+    Zdata = []    
+    #iterating over images
+    for element in chunk:
+        number_of_captions = len(element['af'])
+        
+        #iterating over captions per image
+        for counter in range(number_of_captions):
+            Ydata.append(element['vf'])
+            Xdata.append(element['af'][counter])
+            Zdata.append(element['captions'][counter])       
+    return Ydata, Xdata , Zdata
+        
+        
+def read_feature_filenames (path_json, split, shuffle_data = True ):
     
     if split == 'train':
         json_name = 'SpokenCOCO_train.json'
@@ -62,69 +74,48 @@ def read_file_names (path_json, split, shuffle = True ):
     json_file = os.path.join(path_json , json_name)
     
     data = get_SPOKENCOCO_data (json_file , split)
-    
-    Ydata_all_initial = []
-    Xdata_all_initial = []
-    Zdata_all_initial = []
+    feature_names = []
+   
      
     #iterating over images
     for element in data:
-        
+        features = {}
+
+        features['vf'] = element['visual_feature']
+        features['af'] = []
+        features['captions'] = []
         audio_data = element['audio_data']
         #iterating over captions per image
         for caption_item in audio_data:
-            Ydata_all_initial.append(element['visual_feature'])
-            Xdata_all_initial.append(caption_item['audio_feature'])
-            Zdata_all_initial.append(caption_item['text_caption'])
             
-    if shuffle:
-        inds_shuffled = shuffle(numpy.arange(len(data)))       
+            features['af'].append(caption_item['audio_feature'])
+            features['captions'].append(caption_item['text_caption'])
+            
+        feature_names.append(features)
+                
+    if shuffle_data:
+        inds_shuffled = shuffle(numpy.arange(len(feature_names)))       
     else:
-        inds_shuffled = numpy.arange(len(data))
+        inds_shuffled = numpy.arange(len(feature_names))
         
-    # Ydata_all_initial = numpy.array(Ydata_all_initial)
-    # Xdata_all_initial = numpy.array(Xdata_all_initial)
-    # Zdata_all_initial = numpy.array(Zdata_all_initial) 
-    
-    # Ydata_all = Ydata_all_initial[inds_shuffled]
-    # Xdata_all = Xdata_all_initial[inds_shuffled]
-    # Zdata_all = Zdata_all_initial[inds_shuffled]
+    feature_names_output = [feature_names[ind] for ind in inds_shuffled]
         
-    return Ydata_all_initial, Xdata_all_initial , Zdata_all_initial    
-
-def chunk_file_names (Ydata_all, Xdata_all , Zdata_all , chunk_length):
-    
-    data_length = len(Ydata_all)
-    data_chunked = []
-    for start_chunk in range(0, data_length , chunk_length):
-        Ydata_chunk = Ydata_all [start_chunk:start_chunk +chunk_length ]
-        Xdata_chunk = Xdata_all [start_chunk:start_chunk +chunk_length ]
-        Zdata_chunk = Zdata_all [start_chunk:start_chunk +chunk_length ]
-        
-        chunk = {}
-        chunk['Ydata'] = Ydata_chunk
-        chunk['Xdata'] = Xdata_chunk
-        chunk['Zdata'] = Zdata_chunk
-        data_chunked.append(chunk)
-        return data_chunked
+    return feature_names_output  
     
     
-def loadXdata (filename, len_of_longest_sequence , i_cap):
-    infile = open(filename ,'rb')
-    logmel = pickle.load(infile)
+def load_data (filepath):
+    infile = open(filepath ,'rb')
+    data = pickle.load(infile)
     infile.close()
-    logmel_i = [item[i_cap] for item in logmel]
-    Xdata = preparX (logmel_i, len_of_longest_sequence ,)
-    del logmel
-    return Xdata
+    return data
     
-def loadYdata (filename):
-    infile = open(filename ,'rb')
-    vgg = pickle.load(infile)
-    infile.close()
-    Ydata = preparY(vgg)
-    del vgg 
-    return Ydata
+# def loadYdata (filename):
+#     infile = open(filename ,'rb')
+#     vgg = pickle.load(infile)
+#     infile.close()
+#     Ydata = preparY(vgg)
+#     del vgg 
+#     return Ydata
 
     
 def preparX (dict_logmel, len_of_longest_sequence):
@@ -146,12 +137,15 @@ def preparY (dict_vgg):
 
 
 
-def prepare_XY (Ydata_names, Xdata_names):
+def prepare_XY (Ynames, Xnames , feature_path_audio , feature_path_image):
      #...................................................................... Y 
-    filename = ''
-    Ydata = loadYdata(filename)
+    Ydata = []
+    for Yname in Ynames:
+        Ypath = os.path.join(feature_path_image, Yname )
+        Ydata.append(load_data(Ypath))
     #.................................................................. X
-    filename = ''
-    Xdata = loadXdata(filename) 
-
+    Xdata = []
+    for Xname in Xnames:
+        Xpath = os.path.join(feature_path_audio, Xname )
+        Xdata.append(load_data(Xpath))   
     return Ydata, Xdata 

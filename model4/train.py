@@ -25,7 +25,7 @@ class train_validate (VGS):
         self.use_pretrained = cfg.action_parameters['use_pretrained']
         self.training_mode = cfg.action_parameters['training_mode']
         self.evaluating_mode = cfg.action_parameters['evaluating_mode']
-        self.saveing_mode = cfg.action_parameters['save_model']
+        self.saving_mode = cfg.action_parameters['save_model']
         self.save_best_recall = cfg.action_parameters['save_best_recall']
         self.save_best_loss = cfg.action_parameters['save_best_loss']
         self.find_recall = cfg.action_parameters['find_recall']
@@ -98,8 +98,7 @@ class train_validate (VGS):
         
     def train_model(self): 
         self.split = 'train'
-        if self.use_pretrained:
-            self.vgs_model.load_weights(self.model_dir + 'model_weights.h5')
+        self.set_feature_paths()
                
         Ynames_all, Xnames_all , Znames_all = self.prepare_chunked_names()
         number_of_chunks = len(Ynames_all)
@@ -108,27 +107,32 @@ class train_validate (VGS):
             Xnames = Xnames_all [counter]
             Znames = Znames_all [counter]
             
-            Ydata, Xdata = prepare_XY (Ynames, Xnames , self.feature_path_audio , self.feature_path_image )
+            Ydata, Xdata = prepare_XY (Ynames, Xnames , self.feature_path_audio , self.feature_path_image , self.length_sequence )
                 
             Ydata_triplet, Xdata_triplet, bin_triplet = prepare_triplet_data (Ydata, Xdata) 
-            self.vgs_model.fit([Ydata_triplet, Xdata_triplet ], bin_triplet, shuffle=False, epochs=1,batch_size=160)                 
-        
+            history = self.vgs_model.fit([Ydata_triplet, Xdata_triplet ], bin_triplet, shuffle=False, epochs=1,batch_size=120)                      
             del Ydata, Xdata, Xdata_triplet, Ydata_triplet
-        
-       
+        training_output = history.history['loss'][0]
+        return training_output
 
     def evaluate_model (self) :
-        self.split = 'val'        
+        self.split = 'val' 
+        self.set_feature_paths()
         epoch_cum_val = 0
         epoch_cum_recall_av = 0
         epoch_cum_recall_va = 0
-        i_caption = numpy.random.randint(0, 5)
-        set_of_input_chunks = self.validation_chunks
-
-        for chunk_counter, chunk_name in enumerate(set_of_input_chunks):
-            print('.......... validation chunk ..........' + str(chunk_counter))
-            Ydata, Xdata = prepare_XY (self.feature_dir , self.visual_feature_name ,  self.audio_feature_name , chunk_name , i_caption , self.length_sequence)
-            #..................................................................... Recall
+        Ynames_all, Xnames_all , Znames_all = self.prepare_chunked_names()
+        number_of_chunks = len(Ynames_all)
+        for counter in range(number_of_chunks):
+            Ynames = Ynames_all [counter]
+            Xnames = Xnames_all [counter]
+            Znames = Znames_all [counter]
+            
+            Ydata, Xdata = prepare_XY (Ynames, Xnames , self.feature_path_audio , self.feature_path_image , self.length_sequence )
+            Ydata_triplet, Xdata_triplet, bin_triplet = prepare_triplet_data (Ydata, Xdata) 
+            loss = self.vgs_model.evaluate([Ydata_triplet, Xdata_triplet ], bin_triplet, batch_size=120) 
+            epoch_cum_val += loss
+            #............................................................. Recall
             if self.find_recall:
 
                 number_of_samples = len(Ydata)
@@ -137,8 +141,7 @@ class train_validate (VGS):
 
                 audio_embeddings = self.audio_embedding_model.predict(Xdata)
                 audio_embeddings_mean = numpy.mean(audio_embeddings, axis = 1)                 
-                
-                
+  
                 ########### calculating Recall@10                    
                 poolsize =  1000
                 number_of_trials = 100
@@ -147,14 +150,15 @@ class train_validate (VGS):
                 recall10_av = numpy.mean(recall_av_vec)/(poolsize)
                 recall10_va = numpy.mean(recall_va_vec)/(poolsize)
                 epoch_cum_recall_av += recall10_av
+                print(epoch_cum_recall_av)
                 epoch_cum_recall_va += recall10_va               
                 del Xdata, audio_embeddings
                 del Ydata, visual_embeddings            
-            #del Xdata_triplet,Ydata_triplet
+            del Xdata_triplet, Ydata_triplet
             
-        final_recall_av = epoch_cum_recall_av / (chunk_counter + 1 ) 
-        final_recall_va = epoch_cum_recall_va / (chunk_counter + 1 ) 
-        final_valloss = epoch_cum_val/ len (set_of_input_chunks) 
+        final_recall_av = epoch_cum_recall_av / (number_of_chunks ) 
+        final_recall_va = epoch_cum_recall_va / (number_of_chunks ) 
+        final_valloss = epoch_cum_val/ number_of_chunks
         
         validation_output = [final_recall_av, final_recall_va , final_valloss]
         print(validation_output)
@@ -206,16 +210,17 @@ class train_validate (VGS):
 
         plt.savefig(self.model_dir + 'evaluation_plot.pdf', format = 'pdf')
  
-    
-    def __call__(self):
-    
+    def define_and_compile_models (self):
         self.vgs_model, self.visual_embedding_model, self.audio_embedding_model = self.build_model(self.model_name, self.model_subname, self.input_dim)
         self.vgs_model.compile(loss=triplet_loss, optimizer= keras.optimizers.Adam(lr=1e-04))
         print(self.vgs_model.summary())
+        
+    def __call__(self):
+    
+        self.define_and_compile_models()
   
         initialized_output = self.initialize_model_parameters()
         
-  
         if self.use_pretrained:
             self.vgs_model.load_weights(self.model_dir + 'model_weights.h5')
 

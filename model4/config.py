@@ -3,7 +3,7 @@
 
 
 paths = {
-  "feature_path_SPOKENCOCO": "../../features/SPOKENCOCO/",
+  "feature_path_SPOKENCOCO": "../../features/SPOKEN-COCO/",
   "feature_path_MSCOCO": "../../features/MSCOCO/",
   "json_path_SPOKENCOCO" : "/tuni/groups/3101050_Specog/corpora/SPOKEN-COCO/",
   "dataset_name" : "SPOKEN-COCO",
@@ -14,14 +14,14 @@ paths = {
 
 
 action_parameters = {
-  "use_pretrained": False,
+  "use_pretrained": True,
   "training_mode": True,
   "evaluating_mode": True,
-  "save_model":False,
-  "save_best_recall" : False,
-  "save_best_loss" : True,
-  "find_recall" : False,
-  "number_of_epochs" : 10,
+  "save_model":True,
+  "save_best_recall" : True,
+  "save_best_loss" : False,
+  "find_recall" : True,
+  "number_of_epochs" : 100,
   "chunk_length":2000
 }
 

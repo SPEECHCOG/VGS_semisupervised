@@ -15,6 +15,6 @@ from train import train_validate
 
 
 run_training_and_validation = train_validate ()
-Ynames_all, Xnames_all , Znames_all = run_training_and_validation.train_model()
+run_training_and_validation()
 
     

@@ -109,14 +109,6 @@ def load_data (filepath):
     infile.close()
     return data
     
-# def loadYdata (filename):
-#     infile = open(filename ,'rb')
-#     vgg = pickle.load(infile)
-#     infile.close()
-#     Ydata = preparY(vgg)
-#     del vgg 
-#     return Ydata
-
     
 def preparX (dict_logmel, len_of_longest_sequence):
     number_of_audios = numpy.shape(dict_logmel)[0]
@@ -134,18 +126,19 @@ def preparY (dict_vgg):
     return Y
 
 
-
-
-
-def prepare_XY (Ynames, Xnames , feature_path_audio , feature_path_image):
+def prepare_XY (Ynames, Xnames , feature_path_audio , feature_path_image , len_of_longest_sequence):
      #...................................................................... Y 
     Ydata = []
     for Yname in Ynames:
         Ypath = os.path.join(feature_path_image, Yname )
-        Ydata.append(load_data(Ypath))
+        Ydata_initial = load_data(Ypath)
+        Ydata.append(numpy.reshape(Ydata_initial,[14,14,512]))
     #.................................................................. X
     Xdata = []
     for Xname in Xnames:
         Xpath = os.path.join(feature_path_audio, Xname )
         Xdata.append(load_data(Xpath))   
-    return Ydata, Xdata 
+    # ......... preparing data (zeropadding for X) 
+    Ydata_output = preparY(Ydata)
+    Xdata_output = preparX(Xdata, len_of_longest_sequence)
+    return Ydata_output, Xdata_output 

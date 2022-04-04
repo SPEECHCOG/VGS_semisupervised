@@ -56,6 +56,7 @@ class VGS:
         [Xshape, Yshape] = self.input_dim
         dropout_size = 0.3
         visual_sequence = Input(shape=Yshape)
+        
         visual_sequence_norm = BatchNormalization(axis=-1, name = 'bn0_visual')(visual_sequence)
         
         forward_visual = Conv2D(512,(3,3),strides=(1,1),padding = "same", activation='linear', name = 'conv_visual')(visual_sequence_norm)

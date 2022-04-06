@@ -77,7 +77,7 @@ class train_validate (VGS):
     def prepare_chunked_names (self):
         split = self.split
         if self.dataset_name == "SPOKEN-COCO":
-            feature_names = read_feature_filenames (self.json_path_SPOKENCOCO, split , shuffle_data = False )  
+            feature_names = read_feature_filenames (self.json_path_SPOKENCOCO, split , shuffle_data = True )  
             #feature_names_chunked = chunk_feature_filenames (feature_names, self.chunk_length)
             n = len(feature_names)
             Ynames_all, Xnames_all , Znames_all = [],[],[]

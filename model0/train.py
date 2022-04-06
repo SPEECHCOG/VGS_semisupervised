@@ -4,7 +4,6 @@ import scipy.io
 from matplotlib import pyplot as plt
 
 from tensorflow import keras
-from similarity_analysis import find_similar_pairs
 from data_preprocessing import prepare_XY , read_feature_filenames,  expand_feature_filenames
 from utils import  prepare_triplet_data ,  triplet_loss , calculate_recallat10
 from model import VGS
@@ -42,8 +41,10 @@ class train_validate (VGS):
         self.input_dim = [self.Xshape,self.Yshape] 
         
         self.length_sequence = self.Xshape[0]
-        self.split = 'train'
         
+        
+        
+        self.split = 'train'
         super().__init__() 
         
         
@@ -94,26 +95,6 @@ class train_validate (VGS):
         if self.dataset_name == "SPOKEN-COCO":
             self.feature_path_audio = self.feature_path_SPOKENCOCO 
             self.feature_path_image = self.feature_path_MSCOCO 
-
-    def train_model_with_extra_pairs(self): 
-        self.split = 'train'
-        self.set_feature_paths()
-               
-        Ynames_all, Xnames_all , Znames_all = self.prepare_chunked_names()
-        number_of_chunks = len(Ynames_all)
-        for counter in range(number_of_chunks):
-            Ynames = Ynames_all [counter]
-            Xnames = Xnames_all [counter]
-            Znames = Znames_all [counter]
-            find_similar_pairs (Znames)
-            Ydata, Xdata = prepare_XY (Ynames, Xnames , self.feature_path_audio , self.feature_path_image , self.length_sequence )
-                
-            Ydata_triplet, Xdata_triplet, bin_triplet = prepare_triplet_data (Ydata, Xdata) 
-            history = self.vgs_model.fit([Ydata_triplet, Xdata_triplet ], bin_triplet, shuffle=False, epochs=1,batch_size=120)                      
-            del Ydata, Xdata, Xdata_triplet, Ydata_triplet
-        training_output = history.history['loss'][0]
-        return training_output
-
         
     def train_model(self): 
         self.split = 'train'
@@ -125,7 +106,7 @@ class train_validate (VGS):
             Ynames = Ynames_all [counter]
             Xnames = Xnames_all [counter]
             Znames = Znames_all [counter]
-
+            
             Ydata, Xdata = prepare_XY (Ynames, Xnames , self.feature_path_audio , self.feature_path_image , self.length_sequence )
                 
             Ydata_triplet, Xdata_triplet, bin_triplet = prepare_triplet_data (Ydata, Xdata) 

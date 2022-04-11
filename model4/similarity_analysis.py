@@ -8,10 +8,10 @@ import numpy
 from sent2vec.vectorizer import Vectorizer
 
 #vectorizer = Vectorizer()
-vectorizer = Vectorizer(pretrained_weights='bert-base-uncased')
+vectorizer = Vectorizer() # pretrained_weights='bert-base-uncased'
 
 
-def calculate_similarity_matrix (list_of_sentences):
+def calculate_distance_matrix (list_of_sentences):
     vectors = vectorizer.vectors
     vectorizer.run(list_of_sentences)
     vectors = numpy.array(vectors)
@@ -21,7 +21,7 @@ def calculate_similarity_matrix (list_of_sentences):
 
 
 def find_similar_pairs (list_of_sentences):
-    sim = calculate_similarity_matrix(list_of_sentences)
+    sim = calculate_distance_matrix(list_of_sentences)
     best = {}
     best['best_pairs'] = []
     best['similarity'] = []

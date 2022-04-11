@@ -101,18 +101,19 @@ class train_validate (VGS):
                
         Ynames_all, Xnames_all , Znames_all = self.prepare_chunked_names()
         number_of_chunks = len(Ynames_all)
-        for counter in range(number_of_chunks):
-            Ynames = Ynames_all [counter]
-            Xnames = Xnames_all [counter]
-            Znames = Znames_all [counter]
-            find_similar_pairs (Znames)
-            Ydata, Xdata = prepare_XY (Ynames, Xnames , self.feature_path_audio , self.feature_path_image , self.length_sequence )
+        #for counter in range(number_of_chunks):
+        counter = 0
+        Ynames = Ynames_all [counter]
+        Xnames = Xnames_all [counter]
+        Znames = Znames_all [counter]
+        check = find_similar_pairs (Znames)
+        #     Ydata, Xdata = prepare_XY (Ynames, Xnames , self.feature_path_audio , self.feature_path_image , self.length_sequence )
                 
-            Ydata_triplet, Xdata_triplet, bin_triplet = prepare_triplet_data (Ydata, Xdata) 
-            history = self.vgs_model.fit([Ydata_triplet, Xdata_triplet ], bin_triplet, shuffle=False, epochs=1,batch_size=120)                      
-            del Ydata, Xdata, Xdata_triplet, Ydata_triplet
-        training_output = history.history['loss'][0]
-        return training_output
+        #     Ydata_triplet, Xdata_triplet, bin_triplet = prepare_triplet_data (Ydata, Xdata) 
+        #     history = self.vgs_model.fit([Ydata_triplet, Xdata_triplet ], bin_triplet, shuffle=False, epochs=1,batch_size=120)                      
+        #     del Ydata, Xdata, Xdata_triplet, Ydata_triplet
+        # training_output = history.history['loss'][0]
+        return check
 
         
     def train_model(self): 

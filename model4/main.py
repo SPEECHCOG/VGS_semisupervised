@@ -14,7 +14,12 @@ from train import train_validate
 
 
 
-run_training_and_validation = train_validate ()
-run_training_and_validation()
+obj = train_validate ()
+obj()
 
-    
+
+# to check some examples of similarity search
+# Znames , check = obj.test_similarities()
+# i = 15
+# print(Znames[i])
+# print(Znames[check['best_pairs'][i]])

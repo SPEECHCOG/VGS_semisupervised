@@ -5,7 +5,7 @@ from matplotlib import pyplot as plt
 
 from tensorflow import keras
 from similarity_analysis import find_similar_pairs
-from data_preprocessing import prepare_XY , read_feature_filenames,  expand_feature_filenames
+from data_preprocessing import prepare_XY , read_feature_filenames,  expand_feature_filenames2
 from utils import  prepare_triplet_data ,  triplet_loss , calculate_recallat10
 from model import VGS
 import config as cfg
@@ -43,6 +43,8 @@ class train_validate (VGS):
         
         self.length_sequence = self.Xshape[0]
         self.split = 'train'
+        self.captionID = 0
+        self.feature_names = []
         
         super().__init__() 
         
@@ -72,22 +74,22 @@ class train_validate (VGS):
             
         saving_params = [allepochs_valloss, allepochs_trainloss, all_avRecalls, all_vaRecalls, val_indicator , recall_indicator ]       
         return saving_params 
-
-    def prepare_chunked_names (self):
+    def prepare_feature_names (self):
         split = self.split
         if self.dataset_name == "SPOKEN-COCO":
-            feature_names = read_feature_filenames (self.json_path_SPOKENCOCO, split , shuffle_data = True )  
-            #feature_names_chunked = chunk_feature_filenames (feature_names, self.chunk_length)
-            n = len(feature_names)
-            Ynames_all, Xnames_all , Znames_all = [],[],[]
-
-            for start_chunk in range(0, n , self.chunk_length):
-                end_chunk = start_chunk + self.chunk_length
-                chunk = feature_names [start_chunk:end_chunk ]            
-                Ynames, Xnames , Znames = expand_feature_filenames(chunk )
-                Ynames_all.append(Ynames)
-                Xnames_all.append(Xnames)
-                Znames_all.append(Znames)
+            self.feature_names = read_feature_filenames (self.json_path_SPOKENCOCO, split , shuffle_data = True )  
+        
+    def prepare_chunked_names (self , captionID):
+    
+        n = len(self.feature_names)
+        Ynames_all, Xnames_all , Znames_all = [],[],[]       
+        for start_chunk in range(0, n , self.chunk_length):
+            end_chunk = start_chunk + self.chunk_length
+            chunk = self.feature_names [start_chunk:end_chunk ]            
+            Ynames, Xnames , Znames = expand_feature_filenames2(chunk , captionID)
+            Ynames_all.append(Ynames)
+            Xnames_all.append(Xnames)
+            Znames_all.append(Znames)
         return Ynames_all, Xnames_all , Znames_all
     
     def set_feature_paths (self):
@@ -95,90 +97,129 @@ class train_validate (VGS):
             self.feature_path_audio = self.feature_path_SPOKENCOCO 
             self.feature_path_image = self.feature_path_MSCOCO 
 
-    def train_model_with_extra_pairs(self): 
+    def test_similarities(self): 
+        
+        self.define_and_compile_models() 
+        initialized_output = self.initialize_model_parameters()
+        
+        if self.use_pretrained:
+            self.vgs_model.load_weights(self.model_dir + 'model_weights.h5')
         self.split = 'train'
         self.set_feature_paths()
-               
-        Ynames_all, Xnames_all , Znames_all = self.prepare_chunked_names()
-        number_of_chunks = len(Ynames_all)
-        #for counter in range(number_of_chunks):
-        counter = 0
-        Ynames = Ynames_all [counter]
-        Xnames = Xnames_all [counter]
+        self.captionID = 0 # a number between 0 and 4     
+        Ynames_all, Xnames_all , Znames_all = self.prepare_chunked_names(self.captionID)        
+        counter = 0 # select the number of the chunk, e.g. 1
         Znames = Znames_all [counter]
         check = find_similar_pairs (Znames)
-        #     Ydata, Xdata = prepare_XY (Ynames, Xnames , self.feature_path_audio , self.feature_path_image , self.length_sequence )
+        return Znames , check
+
+
+    def train_model_with_extra_pairs(self): 
+        self.split = 'train'
+        
+        self.set_feature_paths()
+        self.prepare_feature_names()
+        for capID in range(5):
+            print('......... capID ...........' , str(capID))
+            self.captionID = capID       
+            Ynames_all, Xnames_all , Znames_all = self.prepare_chunked_names(self.captionID)
+            number_of_chunks = len(Ynames_all)
+            for counter in range(number_of_chunks):
+                print('......... chunk...........' , str(counter))
+                Ynames = Ynames_all [counter]
+                Xnames = Xnames_all [counter]
+                Znames = Znames_all [counter]
+                similarity_results = find_similar_pairs (Znames)
+                similarity_inds = similarity_results['best_pairs']
+                Xnames_new = [Xnames[i] for i in similarity_inds]
+                Ynames_old_and_new = []
+                Ynames_old_and_new.extend(Ynames)
+                Ynames_old_and_new.extend(Ynames)
+                Xnames_old_and_new = []
+                Xnames_old_and_new.extend(Xnames)
+                Xnames_old_and_new.extend(Xnames_new)
+                Ydata, Xdata = prepare_XY (Ynames_old_and_new, Xnames_old_and_new , self.feature_path_audio , self.feature_path_image , self.length_sequence )
                 
-        #     Ydata_triplet, Xdata_triplet, bin_triplet = prepare_triplet_data (Ydata, Xdata) 
-        #     history = self.vgs_model.fit([Ydata_triplet, Xdata_triplet ], bin_triplet, shuffle=False, epochs=1,batch_size=120)                      
-        #     del Ydata, Xdata, Xdata_triplet, Ydata_triplet
-        # training_output = history.history['loss'][0]
-        return check
+                Ydata_triplet, Xdata_triplet, bin_triplet = prepare_triplet_data (Ydata, Xdata) 
+                history = self.vgs_model.fit([Ydata_triplet, Xdata_triplet ], bin_triplet, shuffle=False, epochs=1,batch_size=120)                      
+                del Ydata, Xdata, Xdata_triplet, Ydata_triplet
+                training_output = history.history['loss'][0]
+        return training_output
 
         
     def train_model(self): 
         self.split = 'train'
         self.set_feature_paths()
-               
-        Ynames_all, Xnames_all , Znames_all = self.prepare_chunked_names()
-        number_of_chunks = len(Ynames_all)
-        for counter in range(number_of_chunks):
-            Ynames = Ynames_all [counter]
-            Xnames = Xnames_all [counter]
-            Znames = Znames_all [counter]
-
-            Ydata, Xdata = prepare_XY (Ynames, Xnames , self.feature_path_audio , self.feature_path_image , self.length_sequence )
+        self.prepare_feature_names()
+        for capID in range(5):
+            print('......... capID ...........' , str(capID))
+            self.captionID = capID       
+            Ynames_all, Xnames_all , Znames_all = self.prepare_chunked_names(self.captionID)
+            number_of_chunks = len(Ynames_all)
+            for counter in range(number_of_chunks):
+                print('......... chunk...........' , str(counter))
+                Ynames = Ynames_all [counter]
+                Xnames = Xnames_all [counter]
+                Znames = Znames_all [counter]
+                #check = find_similar_pairs (Znames)
+                Ydata, Xdata = prepare_XY (Ynames, Xnames , self.feature_path_audio , self.feature_path_image , self.length_sequence )
                 
-            Ydata_triplet, Xdata_triplet, bin_triplet = prepare_triplet_data (Ydata, Xdata) 
-            history = self.vgs_model.fit([Ydata_triplet, Xdata_triplet ], bin_triplet, shuffle=False, epochs=1,batch_size=120)                      
-            del Ydata, Xdata, Xdata_triplet, Ydata_triplet
-        training_output = history.history['loss'][0]
+                Ydata_triplet, Xdata_triplet, bin_triplet = prepare_triplet_data (Ydata, Xdata) 
+                history = self.vgs_model.fit([Ydata_triplet, Xdata_triplet ], bin_triplet, shuffle=False, epochs=1,batch_size=120)                      
+                del Ydata, Xdata, Xdata_triplet, Ydata_triplet
+                training_output = history.history['loss'][0]
         return training_output
 
     def evaluate_model (self) :
-        self.split = 'val' 
+        self.split = 'val'
+
         self.set_feature_paths()
+        self.prepare_feature_names()
         epoch_cum_val = 0
         epoch_cum_recall_av = 0
         epoch_cum_recall_va = 0
-        Ynames_all, Xnames_all , Znames_all = self.prepare_chunked_names()
-        number_of_chunks = len(Ynames_all)
-        for counter in range(number_of_chunks):
-            Ynames = Ynames_all [counter]
-            Xnames = Xnames_all [counter]
-            Znames = Znames_all [counter]
+        
+        
+        for capID in range(5):
+            self.captionID = capID       
+            Ynames_all, Xnames_all , Znames_all = self.prepare_chunked_names(self.captionID)
+            number_of_chunks = len(Ynames_all)
+            for counter in range(number_of_chunks):
+                print('......... capID...........' , str(capID))
+                Ynames = Ynames_all [counter]         
+                Xnames = Xnames_all [counter]
+                Znames = Znames_all [counter]
+                
+                Ydata, Xdata = prepare_XY (Ynames, Xnames , self.feature_path_audio , self.feature_path_image , self.length_sequence )
+                Ydata_triplet, Xdata_triplet, bin_triplet = prepare_triplet_data (Ydata, Xdata) 
+                loss = self.vgs_model.evaluate([Ydata_triplet, Xdata_triplet ], bin_triplet, batch_size=120) 
+                epoch_cum_val += loss
+                #............................................................. Recall
+                if self.find_recall:
+                    print('......... finding recall ...........' )
+                    number_of_samples = len(Ydata)
+                    visual_embeddings = self.visual_embedding_model.predict(Ydata)
+                    visual_embeddings_mean = numpy.mean(visual_embeddings, axis = 1) 
+    
+                    audio_embeddings = self.audio_embedding_model.predict(Xdata)
+                    audio_embeddings_mean = numpy.mean(audio_embeddings, axis = 1)                 
+      
+                    ########### calculating Recall@10                    
+                    poolsize =  1000
+                    number_of_trials = 100
+                    recall_av_vec = calculate_recallat10( audio_embeddings_mean, visual_embeddings_mean, number_of_trials,  number_of_samples , poolsize )          
+                    recall_va_vec = calculate_recallat10( visual_embeddings_mean , audio_embeddings_mean, number_of_trials,  number_of_samples , poolsize ) 
+                    recall10_av = numpy.mean(recall_av_vec)/(poolsize)
+                    recall10_va = numpy.mean(recall_va_vec)/(poolsize)
+                    epoch_cum_recall_av += recall10_av
+                    epoch_cum_recall_va += recall10_va               
+                    del Xdata, audio_embeddings
+                    del Ydata, visual_embeddings            
+                del Xdata_triplet, Ydata_triplet
             
-            Ydata, Xdata = prepare_XY (Ynames, Xnames , self.feature_path_audio , self.feature_path_image , self.length_sequence )
-            Ydata_triplet, Xdata_triplet, bin_triplet = prepare_triplet_data (Ydata, Xdata) 
-            loss = self.vgs_model.evaluate([Ydata_triplet, Xdata_triplet ], bin_triplet, batch_size=120) 
-            epoch_cum_val += loss
-            #............................................................. Recall
-            if self.find_recall:
-
-                number_of_samples = len(Ydata)
-                visual_embeddings = self.visual_embedding_model.predict(Ydata)
-                visual_embeddings_mean = numpy.mean(visual_embeddings, axis = 1) 
-
-                audio_embeddings = self.audio_embedding_model.predict(Xdata)
-                audio_embeddings_mean = numpy.mean(audio_embeddings, axis = 1)                 
-  
-                ########### calculating Recall@10                    
-                poolsize =  1000
-                number_of_trials = 100
-                recall_av_vec = calculate_recallat10( audio_embeddings_mean, visual_embeddings_mean, number_of_trials,  number_of_samples , poolsize )          
-                recall_va_vec = calculate_recallat10( visual_embeddings_mean , audio_embeddings_mean, number_of_trials,  number_of_samples , poolsize ) 
-                recall10_av = numpy.mean(recall_av_vec)/(poolsize)
-                recall10_va = numpy.mean(recall_va_vec)/(poolsize)
-                epoch_cum_recall_av += recall10_av
-                print(epoch_cum_recall_av)
-                epoch_cum_recall_va += recall10_va               
-                del Xdata, audio_embeddings
-                del Ydata, visual_embeddings            
-            del Xdata_triplet, Ydata_triplet
-            
-        final_recall_av = epoch_cum_recall_av / (number_of_chunks ) 
-        final_recall_va = epoch_cum_recall_va / (number_of_chunks ) 
-        final_valloss = epoch_cum_val/ number_of_chunks
+        final_recall_av = epoch_cum_recall_av /  ((number_of_chunks )*(capID+1) )
+        final_recall_va = epoch_cum_recall_va / ((number_of_chunks )*(capID+1) )
+        final_valloss = epoch_cum_val/ (number_of_chunks*(capID+1))
         
         validation_output = [final_recall_av, final_recall_va , final_valloss]
         print(validation_output)
@@ -249,13 +290,18 @@ class train_validate (VGS):
             print('......... epoch ...........' , str(epoch_counter))
             
             if self.training_mode:
-                #training_output = self.train_model(vgs_model)
-                training_output = self.train_model()
+                if epoch_counter >= 2:
+                    self.chunk_length = 5000
+                    training_output = self.train_model_with_extra_pairs()
+                else:
+                    self.chunk_length = 10000
+                    training_output = self.train_model()
+                
             else:
                 training_output = 0
                 
             if self.evaluating_mode:
-                
+                self.chunk_length = 10000
                 validation_output = self.evaluate_model()
             else: 
                 validation_output = [0, 0 , 0 ]
@@ -264,3 +310,4 @@ class train_validate (VGS):
                 self.save_model(initialized_output, training_output, validation_output)
                 
 
+        

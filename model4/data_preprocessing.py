@@ -60,7 +60,20 @@ def expand_feature_filenames (chunk):
             Zdata.append(element['captions'][counter])       
     return Ydata, Xdata , Zdata
         
-        
+def expand_feature_filenames2 (chunk, captionID):
+    
+    Ydata = []
+    Xdata = []
+    Zdata = []    
+    #iterating over images
+    for element in chunk:       
+        # adding the specified captions       
+        Ydata.append(element['vf'])
+        Xdata.append(element['af'][captionID])
+        Zdata.append(element['captions'][captionID])       
+    return Ydata, Xdata , Zdata  
+
+      
 def read_feature_filenames (path_json, split, shuffle_data = True ):
     
     if split == 'train':

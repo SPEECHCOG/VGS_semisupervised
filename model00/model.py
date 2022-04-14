@@ -14,7 +14,7 @@ class VGS:
 
     def build_audio_model (self, input_dim): 
         [Xshape, Yshape] = self.input_dim
-        speech_sequence = Input(shape=Xshape) #X2shape = (1000, 40)
+        speech_sequence = Input(shape=Xshape) #Xshape = (512, 40)
   
         # speech channel
         
@@ -222,11 +222,11 @@ class VGS:
         A = AveragePooling1D(512,padding='same') (out_speech_channel)
         A = Reshape([out_speech_channel.shape[2]])(A) # (N, 512)
          
-        A = Dense(512,activation='linear',name='dense_audio')(A)       
+        A_e = Dense(512,activation='linear',name='dense_audio')(A)       
         #A = Lambda(lambda  x: K.l2_normalize(x,axis=-1),name='out_audio')(A)
         
         
-        I = Dense(512,activation='linear',name='dense_visual')(I) 
+        I_e = Dense(512,activation='linear',name='dense_visual')(I) 
         #I = Lambda(lambda  x: K.l2_normalize(x,axis=-1),name='out_visual')(I)
         
         # Gating
@@ -239,17 +239,17 @@ class VGS:
         # gatedA_2 = Dense(gate_size,activation = 'sigmoid', name = "a2")(gatedA_1)        
         # gatedA = Multiply(name= 'multiplyA')([gatedA_1, gatedA_2])
         
-        visual_embedding_model = Model(inputs=visual_sequence, outputs = I, name='visual_embedding_model')
-        audio_embedding_model = Model(inputs= speech_sequence, outputs = A, name='audio_embedding_model')   
+        visual_embedding_model = Model(inputs=visual_sequence, outputs = I_e, name='visual_embedding_model')
+        audio_embedding_model = Model(inputs= speech_sequence, outputs = A_e, name='audio_embedding_model')   
         
-        if self.loss == "triplet":
+        if self.loss == "Triplet":
             
-            mapIA = dot([I,A],axes=-1,normalize = True,name='dot_matchmap')       
+            mapIA = dot([I_e,A_e],axes=-1,normalize = True,name='dot_matchmap')       
             final_model = Model(inputs=[visual_sequence, speech_sequence], outputs = mapIA )
             #final_model.compile(loss=triplet_loss, optimizer= Adam(lr=1e-04))
             
         elif self.loss == "MMS":
-            s_output = Concatenate(axis=1)([Reshape([1 , I.shape[1]])(I) ,  Reshape([1 ,A.shape[1]])(A)])
+            s_output = Concatenate(axis=1)([Reshape([1 , I_e.shape[1]])(I_e) ,  Reshape([1 ,A_e.shape[1]])(A_e)])
             final_model = Model(inputs=[visual_sequence,  speech_sequence], outputs = s_output )
             #final_model.compile(loss=mms_loss, optimizer= Adam(lr=1e-03))
             

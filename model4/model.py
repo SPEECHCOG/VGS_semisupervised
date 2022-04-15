@@ -165,13 +165,8 @@ class VGS:
         mapIA = keras.layers.dot([I,A],axes=-1,normalize = True,name='dot_matchmap') 
         
         def final_layer(tensor):
-            x= tensor 
-            if model_subname == 'sisa':
-                score = K.mean( (K.mean(x, axis=1)), axis=-1)
-            elif model_subname == 'misa':
-                score = K.mean( (K.mean(x, axis=1)), axis=-1)
-            elif model_subname == 'sima':
-                score = K.mean( (K.mean(x, axis=1)), axis=-1)         
+            x= tensor
+            score = K.mean( (K.mean(x, axis=1)), axis=-1)
             output_score = Reshape([1],name='reshape_final')(score)          
             return output_score
         

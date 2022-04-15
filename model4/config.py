@@ -12,19 +12,19 @@ paths = {
 
 
 action_parameters = {
-  "use_pretrained": True,
+  "use_pretrained": False,
   "training_mode": True,
   "evaluating_mode": True,
   "save_model":True,
   "save_best_recall" : True,
   "save_best_loss" : False,
   "find_recall" : True,
-  "number_of_epochs" : 100,
+  "number_of_epochs" : 50,
   "chunk_length":10000
 }
 
 feature_settings = {
-    "model_name": "CNNatt",
+    "model_name": "CNN0",
     "model_subname": "v0",
     "length_sequence" : 512,
     "Xshape" : (512,40),

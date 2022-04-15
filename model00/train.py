@@ -310,7 +310,7 @@ class train_validate (VGS):
             print('......... epoch ...........' , str(epoch_counter))
             
             if self.training_mode:
-                if epoch_counter >= 5:
+                if epoch_counter >= 25:
                     self.chunk_length = 5000
                     training_output = self.train_model_with_extra_pairs()
                 else:

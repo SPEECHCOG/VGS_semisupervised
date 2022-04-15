@@ -12,7 +12,7 @@ paths = {
 
 
 action_parameters = {
-  "use_pretrained": False,
+  "use_pretrained": True,
   "training_mode": True,
   "evaluating_mode": True,
   "save_model":True,

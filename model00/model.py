@@ -116,7 +116,7 @@ class VGS:
     
         
     def build_visual_model (self, input_dim):
-        
+        # Yshape = (14, 14, 512)
         [Xshape, Yshape] = self.input_dim
         dropout_size = 0.3
         visual_sequence = Input(shape=Yshape)
@@ -133,28 +133,23 @@ class VGS:
         visual_model = Model(inputs= visual_sequence, outputs = out_visual_channel )
         return visual_sequence , out_visual_channel , visual_model
    
-    def build_model (self, model_name, model_subname, input_dim):
-        if model_name == 'CNN0':
-            final_model, visual_embedding_model, audio_embedding_model = self.CNN0(model_subname , input_dim)
-        elif model_name == 'CNNatt':
-            final_model, visual_embedding_model, audio_embedding_model = self.CNNatt(model_subname , input_dim)
-            
-        
-        return final_model, visual_embedding_model, audio_embedding_model
-    
+
     def CNNatt (self , model_subname , input_dim):
-        
-        audio_sequence , out_audio_channel , audio_model = self.build_audio_model ( input_dim)
+        #input_dim = [(512, 40), (14, 14, 512)]
+        speech_sequence , out_speech_channel , audio_model = self.build_audio_model (input_dim)
         visual_sequence , out_visual_channel , visual_model = self. build_visual_model ( input_dim)          
         
-        A = out_audio_channel
+        A = out_speech_channel
         I = out_visual_channel
+        
+        visual_embedding_model = Model(inputs=visual_sequence, outputs = I, name='visual_embedding_model')
+        audio_embedding_model = Model(inputs= speech_sequence, outputs = A, name='audio_embedding_model')  
         
         #### Attention I for query Audio
         # checks which part of image gets more attention based on audio query.   
         keyImage = out_visual_channel
         valueImage = out_visual_channel
-        queryAudio = out_audio_channel
+        queryAudio = out_speech_channel
         
         scoreI = keras.layers.dot([queryAudio,keyImage], normalize=False, axes=-1,name='scoreI')
         weightID = Dense(196,activation='sigmoid')(scoreI)
@@ -174,8 +169,8 @@ class VGS:
     
         ###  Attention A  for query Image
         # checks which part of audio gets more attention based on image query.
-        keyAudio = out_audio_channel
-        valueAudio = out_audio_channel
+        keyAudio = out_speech_channel
+        valueAudio = out_speech_channel
         queryImage = out_visual_channel
         
         scoreA = keras.layers.dot([queryImage,keyAudio], normalize=False, axes=-1,name='scoreA')
@@ -196,18 +191,19 @@ class VGS:
         
         # combining audio and visual channels 
         
-        out_audio = Lambda(lambda  x: K.l2_normalize(x,axis=-1),name='out_audio')(outAttAudio)
-        out_visual = Lambda(lambda  x: K.l2_normalize(x,axis=-1),name='out_visual')(outAttImage)
-         
+        A_e = Lambda(lambda  x: K.l2_normalize(x,axis=-1),name='out_audio')(outAttAudio)
+        I_e = Lambda(lambda  x: K.l2_normalize(x,axis=-1),name='out_visual')(outAttImage)
         
-        mapIA = keras.layers.dot([out_visual,out_audio],axes=-1,normalize = True,name='dot_final')
-        final_model = Model(inputs=[visual_sequence, audio_sequence], outputs = mapIA , name='vgs_model')
         
-         
-        visual_embedding_model = Model(inputs=visual_sequence, outputs= I, name='visual_embedding_model')
-        audio_embedding_model = Model(inputs=audio_sequence,outputs= A, name='visual_embedding_model')
-
-        return final_model, visual_embedding_model, audio_embedding_model
+        if self.loss == "Triplet":
+            mapIA = keras.layers.dot([I_e,A_e],axes=-1,normalize = True,name='dot_final')
+            final_model = Model(inputs=[visual_sequence, speech_sequence], outputs = mapIA , name='vgs_model')
+            
+        elif self.loss == "MMS":
+            s_output = Concatenate(axis=1)([Reshape([1 , I_e.shape[1]])(I_e) ,  Reshape([1 ,A_e.shape[1]])(A_e)])
+            final_model = Model(inputs=[visual_sequence,  speech_sequence], outputs = s_output )
+    
+        return final_model, visual_embedding_model, audio_embedding_model 
          
     def CNN0 (self, model_subname, input_dim):
     
@@ -225,54 +221,44 @@ class VGS:
         A_e = Dense(512,activation='linear',name='dense_audio')(A)       
         #A = Lambda(lambda  x: K.l2_normalize(x,axis=-1),name='out_audio')(A)
         
-        
         I_e = Dense(512,activation='linear',name='dense_visual')(I) 
         #I = Lambda(lambda  x: K.l2_normalize(x,axis=-1),name='out_visual')(I)
         
-        # Gating
-        # gate_size = 4096
-        # gatedV_1 = Dense(gate_size, name = "v1")(V)
-        # gatedV_2 = Dense(gate_size,activation = 'sigmoid', name = "v2")(gatedV_1)        
-        # gatedV = Multiply(name= 'multiplyV')([gatedV_1, gatedV_2])
-
-        # gatedA_1 = Dense(gate_size, name = "a1")(A)
-        # gatedA_2 = Dense(gate_size,activation = 'sigmoid', name = "a2")(gatedA_1)        
-        # gatedA = Multiply(name= 'multiplyA')([gatedA_1, gatedA_2])
         
         visual_embedding_model = Model(inputs=visual_sequence, outputs = I_e, name='visual_embedding_model')
-        audio_embedding_model = Model(inputs= speech_sequence, outputs = A_e, name='audio_embedding_model')   
+        audio_embedding_model = Model(inputs= speech_sequence, outputs = A_e, name='audio_embedding_model')  
         
         if self.loss == "Triplet":
+            # mapIA = keras.layers.dot([I,A],axes=-1,normalize = True,name='dot_matchmap') 
+            # def final_layer(tensor):
+            #     x= tensor 
+            #     score = K.mean( (K.mean(x, axis=1)), axis=-1)
+            #     output_score = Reshape([1],name='reshape_final')(score)          
+            #     return output_score
+            # lambda_layer = Lambda(final_layer, name="final_layer")(mapIA)
+            # final_model = Model(inputs=[visual_sequence, speech_sequence], outputs = lambda_layer )
             
             mapIA = dot([I_e,A_e],axes=-1,normalize = True,name='dot_matchmap')       
             final_model = Model(inputs=[visual_sequence, speech_sequence], outputs = mapIA )
-            #final_model.compile(loss=triplet_loss, optimizer= Adam(lr=1e-04))
             
         elif self.loss == "MMS":
             s_output = Concatenate(axis=1)([Reshape([1 , I_e.shape[1]])(I_e) ,  Reshape([1 ,A_e.shape[1]])(A_e)])
             final_model = Model(inputs=[visual_sequence,  speech_sequence], outputs = s_output )
-            #final_model.compile(loss=mms_loss, optimizer= Adam(lr=1e-03))
-            
-            
-        # post-processing for Audio and Image channels (Dense + L2 norm layers)
-        
-        # mapIA = keras.layers.dot([I,A],axes=-1,normalize = True,name='dot_matchmap') 
-        
-        # def final_layer(tensor):
-        #     x= tensor 
-        #     score = K.mean( (K.mean(x, axis=1)), axis=-1)
-        #     output_score = Reshape([1],name='reshape_final')(score)          
-        #     return output_score
-        
-        # lambda_layer = Lambda(final_layer, name="final_layer")(mapIA)        
-        # final_model = Model(inputs=[visual_sequence, speech_sequence], outputs = lambda_layer )
-        
-        # visual_embedding_model = Model(inputs=visual_sequence, outputs= I, name='visual_embedding_model')
-        # audio_embedding_model = Model(inputs=speech_sequence,outputs= A, name='visual_embedding_model')
-
-        return final_model, visual_embedding_model, audio_embedding_model        
+        return final_model, visual_embedding_model, audio_embedding_model
+  
+        return  final_model, visual_embedding_model, audio_embedding_model   
           
+    def build_model (self, model_name, model_subname, input_dim): 
+            
+        if model_name == 'CNN0':
+            final_model, visual_embedding_model, audio_embedding_model = self.CNN0(model_subname , input_dim)
+        elif model_name == 'CNNatt':
+            final_model, visual_embedding_model, audio_embedding_model = self.CNNatt(model_subname , input_dim)
+    
+        return final_model, visual_embedding_model, audio_embedding_model         
+    
 
+    
      
 
 

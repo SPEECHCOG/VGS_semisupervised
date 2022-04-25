@@ -91,45 +91,64 @@ def prepare_MMS_data (Ydata, Xdata ,shuffle_data = False):
     
     return [Ydata_MMS, Xdata_MMS] , target
 
-def mms_loss(y_true , y_pred): 
+# def mms_loss(y_true , y_pred): 
+    
+#     out_visual = y_pred [:,0,:]
+#     out_audio = y_pred [:,1,:]
+
+#     print('this isout_visual before expand dim')
+#     print(out_visual.shape)
+#     out_visual = y_pred [:,0,:]
+#     out_audio = y_pred [:,1,:]
+#     out_visual = K.expand_dims(out_visual, 0)
+#     out_audio = K.expand_dims(out_audio, 0)
+
+#     S = K.squeeze( K.batch_dot(out_audio, out_visual, axes=[-1,-1]) , axis = 0)      
+#     # ...................................................... method 0
+#     margine = 0.001
+
+#     def margine_softmax(Sinitial ,margine):
+#         S = Sinitial - K.max(Sinitial, axis = 0)    
+#         S_diag =  tf.linalg.diag_part (S) 
+#         S_diag_margin = K.exp(S_diag - margine)
+#         Factor = K.exp(S_diag)
+#         S_sum = K.sum(K.exp(S) , axis = 0)
+#         S_other = S_sum - Factor
+#         Output = S_diag_margin / ( S_diag_margin + S_other) 
+       
+#         return Output
+    
+#     Y_hat1 =  margine_softmax(S ,margine) 
+#     Y_hat2 =  margine_softmax(K.transpose(S) ,margine)     
+#     # ......................................................  
+#     I2C_loss = - K.mean ( K.log(Y_hat1 + 1e-20) , axis = 0)
+#     C2I_loss = - K.mean ( K.log(Y_hat2 + 1e-20) , axis = 0) 
+    
+#     loss = I2C_loss + C2I_loss      
+#     return loss
+
+def mms_loss(y_true , y_pred ): 
     
     out_visual = y_pred [:,0,:]
     out_audio = y_pred [:,1,:]
 
-    print('this isout_visual before expand dim')
-    print(out_visual.shape)
-    out_visual = y_pred [:,0,:]
-    out_audio = y_pred [:,1,:]
     out_visual = K.expand_dims(out_visual, 0)
     out_audio = K.expand_dims(out_audio, 0)
 
-    S = K.squeeze( K.batch_dot(out_audio, out_visual, axes=[-1,-1]) , axis = 0)
-       
-    # ...................................................... method 0
-    margine = 0.001
-
-    def margine_softmax(Sinitial ,margine):
-        S = Sinitial - K.max(Sinitial, axis = 0)    
-        S_diag =  tf.linalg.diag_part (S) 
-        S_diag_margin = K.exp(S_diag - margine)
-        Factor = K.exp(S_diag)
-        S_sum = K.sum(K.exp(S) , axis = 0)
-        S_other = S_sum - Factor
-        Output = S_diag_margin / ( S_diag_margin + S_other) 
-       
-        return Output
+    S = K.squeeze( K.batch_dot(out_audio, out_visual,axes=[-1,-1]) , axis = 0)
+    # ...................................................... method 1
+    P1 = K.softmax(S, axis = 0) #row-wise softmax
+    P2 = K.softmax(S, axis = 1) #column-wise softmax
     
-    Y_hat1 =  margine_softmax(S ,margine) 
-    Y_hat2 =  margine_softmax(K.transpose(S) ,margine) 
+    P1 = P1 + 0.05
+    P2 = P2 + 0.05
     
-    
+    Y_hat1 = tf.linalg.diag_part (P1)
+    Y_hat2 = tf.linalg.diag_part (P2)   
     # ......................................................
     
-    I2C_loss = - K.mean ( K.log(Y_hat1 + 1e-20) , axis = 0)
-    C2I_loss = - K.mean ( K.log(Y_hat2 + 1e-20) , axis = 0) 
+    I2C_loss = K.sum ( - (K.log(Y_hat1)) , axis = 0)
+    C2I_loss = K.sum ( -  (K.log(Y_hat2)) , axis = 0) 
     
     loss = I2C_loss + C2I_loss
-    
-    print('loss shape')
-    
     return loss

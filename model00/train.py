@@ -40,7 +40,7 @@ class train_validate (VGS):
         self.Xshape = cfg.feature_settings['Xshape']
         self.Yshape = cfg.feature_settings['Yshape']
         self.input_dim = [self.Xshape,self.Yshape] 
-        self.loss = "Triplet"
+        self.loss = "MMS"
         
         self.length_sequence = self.Xshape[0]
         self.split = 'train'
@@ -310,7 +310,7 @@ class train_validate (VGS):
             print('......... epoch ...........' , str(epoch_counter))
             
             if self.training_mode:
-                if epoch_counter >= 5:
+                if epoch_counter >= 20:
                     self.chunk_length = 5000
                     training_output = self.train_model_with_extra_pairs()
                 else:

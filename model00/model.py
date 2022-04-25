@@ -212,7 +212,7 @@ class VGS:
     def CNN0 (self, model_subname, input_dim):
     
         #input_dim = [(512, 40), (14, 14, 512)]
-        speech_sequence , out_speech_channel , audio_model = self.build_audio_model ( input_dim)
+        speech_sequence , out_speech_channel , audio_model = self.build_simple_audio_model ( input_dim)
         visual_sequence , out_visual_channel , visual_model = self. build_visual_model ( input_dim)  
         
         

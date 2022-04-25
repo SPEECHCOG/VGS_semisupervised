@@ -189,7 +189,7 @@ class train_validate (VGS):
         epoch_cum_recall_va = 0
         
         
-        for capID in range(5):
+        for capID in range(1):
             self.captionID = capID       
             Ynames_all, Xnames_all , Znames_all = self.prepare_chunked_names(self.captionID)
             number_of_chunks = len(Ynames_all)
@@ -212,15 +212,14 @@ class train_validate (VGS):
                     print('......... finding recall ...........' )
                     number_of_samples = len(Ydata)
                     visual_embeddings = self.visual_embedding_model.predict(Ydata)
-                     
-    
                     audio_embeddings = self.audio_embedding_model.predict(Xdata)
-                    visual_embeddings_mean = visual_embeddings
-                    audio_embeddings_mean = audio_embeddings                 
+                    if self.model_name == "CNN0":
+                        visual_embeddings_mean = visual_embeddings
+                        audio_embeddings_mean = audio_embeddings                 
       
-                                      
-                    # visual_embeddings_mean = numpy.mean(visual_embeddings, axis = 1)
-                    # audio_embeddings_mean = numpy.mean(audio_embeddings, axis = 1)
+                    elif self.model_name == "CNNatt":                 
+                        visual_embeddings_mean = numpy.mean(visual_embeddings, axis = 1)
+                        audio_embeddings_mean = numpy.mean(audio_embeddings, axis = 1)
                     ########### calculating Recall@10                    
                     poolsize =  1000
                     number_of_trials = 100
@@ -310,7 +309,11 @@ class train_validate (VGS):
             print('......... epoch ...........' , str(epoch_counter))
             
             if self.training_mode:
+<<<<<<< HEAD
                 if epoch_counter >= 20:
+=======
+                if epoch_counter >= 25:
+>>>>>>> 16bf28cbc465b1811bfa6753e50e657b6b967845
                     self.chunk_length = 5000
                     training_output = self.train_model_with_extra_pairs()
                 else:

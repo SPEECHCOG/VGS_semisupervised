@@ -2,11 +2,11 @@ import os
 import numpy
 import scipy.io
 from matplotlib import pyplot as plt
-
+import tensorflow as tf
 from tensorflow import keras
 from similarity_analysis import find_similar_pairs
 from data_preprocessing import prepare_XY , read_feature_filenames,  expand_feature_filenames2
-from utils import  prepare_triplet_data ,  triplet_loss , prepare_MMS_data , mms_loss, prepare_supervised_data , calculate_recallat10, prepare_supervised_data
+from utils import  prepare_triplet_data ,  triplet_loss , prepare_MMS_data , mms_loss, prepare_supervised_data , calculate_recallat10
 from model import VGS
 import config as cfg
     
@@ -40,7 +40,7 @@ class train_validate (VGS):
         self.Xshape = cfg.feature_settings['Xshape']
         self.Yshape = cfg.feature_settings['Yshape']
         self.input_dim = [self.Xshape,self.Yshape] 
-        self.loss = "MMS"
+        self.loss = "l2"
         
         self.length_sequence = self.Xshape[0]
         self.split = 'train'
@@ -98,59 +98,6 @@ class train_validate (VGS):
             self.feature_path_audio = self.feature_path_SPOKENCOCO 
             self.feature_path_image = self.feature_path_MSCOCO 
 
-    def test_similarities(self): 
-        
-        self.define_and_compile_models() 
-        initialized_output = self.initialize_model_parameters()
-        
-        if self.use_pretrained:
-            self.vgs_model.load_weights(self.model_dir + 'model_weights.h5')
-        self.split = 'train'
-        self.set_feature_paths()
-        self.captionID = 0 # a number between 0 and 4     
-        Ynames_all, Xnames_all , Znames_all = self.prepare_chunked_names(self.captionID)        
-        counter = 0 # select the number of the chunk, e.g. 1
-        Znames = Znames_all [counter]
-        check = find_similar_pairs (Znames)
-        return Znames , check
-
-
-    def train_model_with_extra_pairs(self): 
-        self.split = 'train'
-        
-        self.set_feature_paths()
-        self.prepare_feature_names()
-        for capID in range(5):
-            print('......... capID ...........' , str(capID))
-            self.captionID = capID       
-            Ynames_all, Xnames_all , Znames_all = self.prepare_chunked_names(self.captionID)
-            number_of_chunks = len(Ynames_all)
-            for counter in range(number_of_chunks):
-                print('......... chunk...........' , str(counter))
-                Ynames = Ynames_all [counter]
-                Xnames = Xnames_all [counter]
-                Znames = Znames_all [counter]
-                similarity_results = find_similar_pairs (Znames)
-                similarity_inds = similarity_results['best_pairs']
-                Xnames_new = [Xnames[i] for i in similarity_inds]
-                Ynames_old_and_new = []
-                Ynames_old_and_new.extend(Ynames)
-                Ynames_old_and_new.extend(Ynames)
-                Xnames_old_and_new = []
-                Xnames_old_and_new.extend(Xnames)
-                Xnames_old_and_new.extend(Xnames_new)
-                Ydata, Xdata = prepare_XY (Ynames_old_and_new, Xnames_old_and_new , self.feature_path_audio , self.feature_path_image , self.length_sequence )
-                
-                if self.loss == "MMS":
-                    [Yin, Xin] , bin_target = prepare_MMS_data (Ydata, Xdata , shuffle_data = False)
-                if self.loss == "Triplet":                   
-                    Yin, Xin, bin_target = prepare_triplet_data (Ydata, Xdata)
-                    
-                history = self.vgs_model.fit([Yin, Xin ], bin_target, shuffle=False, epochs=1,batch_size=120)                      
-                del Yin, Xin, Ydata, Xdata
-                training_output = history.history['loss'][0]
-        return training_output
-
         
     def train_model(self): 
         self.split = 'train'
@@ -169,14 +116,16 @@ class train_validate (VGS):
                 #check = find_similar_pairs (Znames)
                 
                 Ydata, Xdata = prepare_XY (Ynames, Xnames , self.feature_path_audio , self.feature_path_image , self.length_sequence )
+                # Ydata, Xdata ..> (N, 14,14, 512), (N, 512,40)
                 if self.loss == "MMS":
-                    [Yin, Xin] , bin_target = prepare_MMS_data (Ydata, Xdata , shuffle_data = False)
+                    [Yin, Xin] , target = prepare_MMS_data (Ydata, Xdata , shuffle_data = False)
                 if self.loss == "Triplet":                   
-                    Yin, Xin, bin_target = prepare_triplet_data (Ydata, Xdata)
-                    if self.loss == "l2": 
-                        Yin, Xin, bin_target = prepare_supervised_data (Ydata, Xdata)
+                    Yin, Xin, target = prepare_triplet_data (Ydata, Xdata)
+                if self.loss == "l2": 
+                    Yin, Xin, target = prepare_supervised_data (Ydata, Xdata, Znames)
                     
-                history = self.vgs_model.fit([Yin, Xin ], bin_target, shuffle=False, epochs=1,batch_size=120)                      
+                history = self.vgs_model.fit([Yin, Xin ], target, shuffle=False, epochs=1,batch_size=120) 
+                history = self.vgs_model.fit([Yin, Xin ], target, shuffle=False, epochs=1,batch_size=120)                      
                 del Yin, Xin, Ydata, Xdata
                 training_output = history.history['loss'][0]
         return training_output
@@ -296,6 +245,9 @@ class train_validate (VGS):
             self.vgs_model.compile(loss=mms_loss, optimizer= keras.optimizers.Adam(lr=1e-04))
         elif self.loss == "Triplet":
             self.vgs_model.compile(loss=triplet_loss, optimizer= keras.optimizers.Adam(lr=1e-04))
+        elif self.loss == "l2":
+            mse = tf.keras.losses.MeanSquaredError()
+            self.vgs_model.compile(loss=mse, optimizer= keras.optimizers.Adam(lr=1e-04))
         print(self.vgs_model.summary())
         
     def __call__(self):
@@ -312,18 +264,11 @@ class train_validate (VGS):
             print('......... epoch ...........' , str(epoch_counter))
             
             if self.training_mode:
-                if epoch_counter >= 20:
-                    self.chunk_length = 5000
-                    training_output = self.train_model_with_extra_pairs()
-                else:
-                    self.chunk_length = 10000
-                    training_output = self.train_model()
-                
+                training_output = self.train_model()
             else:
                 training_output = 0
                 
             if self.evaluating_mode:
-                self.chunk_length = 10000
                 validation_output = self.evaluate_model()
             else: 
                 validation_output = [0, 0 , 0 ]

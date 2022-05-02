@@ -41,14 +41,19 @@ vectorizer = Vectorizer()
 #..............................................................................
 
 
-def bert_distance (list_of_sentences):
-
+def bert_distance (pairX, pairY):
+    list_of_sentences = [pairX, pairY]
     vectorizer.bert(list_of_sentences)
-
+    
     vectors_bert = vectorizer.vectors
-    dist = ss.distance.cdist( vectors_bert, vectors_bert ,  'cosine')
+    for i in range(vectors_bert):
+        vector1 = []
+        vector2 = []
+        cosine_similarity = 1 - spatial.distance.cosine(vector1, vector2)
+    
+    #dist = ss.distance.cdist( vectors_bert, vectors_bert ,  'cosine')
     #max_similarities = 1 - spatial.distance.cosine(vectors_bert[0],vectors_bert[1])
-    return dist
+    return cosine_similarity
 
 def find_similar_pairs (list_of_sentences):
     dist = bert_distance (list_of_sentences)

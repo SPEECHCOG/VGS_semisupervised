@@ -12,7 +12,7 @@ paths = {
 
 
 action_parameters = {
-  "use_pretrained": True,
+  "use_pretrained": False,
   "training_mode": True,
   "evaluating_mode": True,
   "save_model":True,
@@ -20,7 +20,7 @@ action_parameters = {
   "save_best_loss" : False,
   "find_recall" : True,
   "number_of_epochs" : 100,
-  "chunk_length":10000
+  "chunk_length":1000
 }
 
 feature_settings = {

@@ -81,7 +81,50 @@ def triplet_loss(y_true,y_pred):
     Sc = y_pred[2::3]      
     return K.sum(K.maximum(0.0,(Sc-Sp + margin )) + K.maximum(0.0,(Si-Sp + margin )),  axis=0) 
 
+###############################################################################
+                                   # MMS #
+############################################################################### 
 
+
+            
+def prepare_MMS_data (Ydata, Xdata ,shuffle_data = False):
+    n_samples = len(Xdata)     
+    target = numpy.ones( n_samples)
+    if shuffle_data:           
+        random_order = numpy.random.permutation(int(n_samples)) 
+        Ydata_MMS = Ydata[random_order ]
+        Xdata_MMS = Xdata[random_order ]                        
+    else:
+        Ydata_MMS = Ydata
+        Xdata_MMS = Xdata
+    
+    return [Ydata_MMS, Xdata_MMS] , target
+
+def mms_loss(y_true , y_pred ): 
+    
+    out_visual = y_pred [:,0,:]
+    out_audio = y_pred [:,1,:]
+
+    out_visual = K.expand_dims(out_visual, 0)
+    out_audio = K.expand_dims(out_audio, 0)
+
+    S = K.squeeze( K.batch_dot(out_audio, out_visual,axes=[-1,-1]) , axis = 0)
+    # ...................................................... method 1
+    P1 = K.softmax(S, axis = 0) #row-wise softmax
+    P2 = K.softmax(S, axis = 1) #column-wise softmax
+    
+    P1 = P1 + 0.05
+    P2 = P2 + 0.05
+    
+    Y_hat1 = tf.linalg.diag_part (P1)
+    Y_hat2 = tf.linalg.diag_part (P2)   
+    # ......................................................
+    
+    I2C_loss = K.sum ( - (K.log(Y_hat1)) , axis = 0)
+    C2I_loss = K.sum ( -  (K.log(Y_hat2)) , axis = 0) 
+    
+    loss = I2C_loss + C2I_loss
+    return loss
 
 ###############################################################################
                     # supervised similarity (bert) #
@@ -89,10 +132,24 @@ def triplet_loss(y_true,y_pred):
 
 from similarity_analysis import bert_distance
 
+
 def find_y_true (pairs, similarity_type):
     y_true = []
     for pair in pairs:
         if similarity_type =="bert":
-            distance_matrix = bert_distance(pair)
+            distance_matrix = bert_distance(pairs)
             distance_pair = distance_matrix[0,1]
-            y_true.append(distance_pair)
+            y_true.append(distance_pair)     
+    return y_true
+            
+def prepare_supervised_data (Ydata, Xdata, Znames):
+    
+    n_samples = len(Ydata)
+    orderX,orderY = randOrder(n_samples)
+    pairX = [Znames [i] for i in orderX]
+    pairY = [Znames [i] for i in orderY]
+    pairs = [[pairX [item] ,pairY[item]] for item in range(len(pairX))]
+    target_triplet = numpy.array(find_y_true(pairs, similarity_type = "bert")) 
+    Ydata_triplet = Ydata[orderY]
+    Xdata_triplet = Xdata[orderX]
+    return Ydata_triplet, Xdata_triplet, target_triplet

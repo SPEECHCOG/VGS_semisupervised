@@ -103,12 +103,12 @@ class train_validate (VGS):
         self.split = 'train'
         self.set_feature_paths()
         self.prepare_feature_names()
-        for capID in range(2):
+        for capID in range(5):
             print('......... capID ...........' , str(capID))
             self.captionID = capID       
             Ynames_all, Xnames_all , Znames_all = self.prepare_chunked_names(self.captionID)
             number_of_chunks = len(Ynames_all)
-            for counter in range(3) :#number_of_chunks):
+            for counter in range(number_of_chunks):
                 print('......... chunk...........' , str(counter))
                 Ynames = Ynames_all [counter]
                 Xnames = Xnames_all [counter]
@@ -144,7 +144,7 @@ class train_validate (VGS):
             self.captionID = capID       
             Ynames_all, Xnames_all , Znames_all = self.prepare_chunked_names(self.captionID)
             number_of_chunks = len(Ynames_all)
-            for counter in range(1):#number_of_chunks):
+            for counter in range(number_of_chunks):
                 print('......... chunk...........' , str(counter))
                 Ynames = Ynames_all [counter]
                 Xnames = Xnames_all [counter]
@@ -251,7 +251,7 @@ class train_validate (VGS):
             self.vgs_model.compile(loss=triplet_loss, optimizer= keras.optimizers.Adam(lr=1e-04))
         elif self.loss == "l2":
             mse = tf.keras.losses.MeanSquaredError()
-            self.vgs_model.compile(loss=mse, optimizer= keras.optimizers.Adam(lr=1e-04))
+            self.vgs_model.compile(loss=mse, optimizer= keras.optimizers.Adam(lr=1e-05))
         print(self.vgs_model.summary())
         
     def __call__(self):

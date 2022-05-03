@@ -84,23 +84,23 @@ class VGS:
     
         audio_sequence = Input(shape=Xshape)
           
-        forward1 = Conv1D(128,5,padding="same",activation=activation_C,name = 'conv1')(audio_sequence)
+        forward1 = Conv1D(64,5,padding="same",activation=activation_C,name = 'conv1')(audio_sequence)
         dr1 = Dropout(dropout_size)(forward1)
         bn1 = BatchNormalization(axis=-1)(dr1)
            
-        forward2 = Conv1D(256,11,padding="same",activation=activation_C,name = 'conv2')(bn1)
+        forward2 = Conv1D(128,11,padding="same",activation=activation_C,name = 'conv2')(bn1)
         dr2 = Dropout(dropout_size)(forward2)
         bn2 = BatchNormalization(axis=-1)(dr2)
          
         pool2 = MaxPooling1D(3,strides = 2, padding='same')(bn2)
           
-        forward3 = Conv1D(256,17,padding="same",activation=activation_C,name = 'conv3')(pool2)
+        forward3 = Conv1D(128,17,padding="same",activation=activation_C,name = 'conv3')(pool2)
         dr3 = Dropout(dropout_size)(forward3)
         bn3 = BatchNormalization(axis=-1)(dr3) 
         
         pool3 = MaxPooling1D(3,strides = 2,padding='same')(bn3)
           
-        forward4 = Conv1D(512,17,padding="same",activation=activation_C,name = 'conv4')(pool3)
+        forward4 = Conv1D(256,17,padding="same",activation=activation_C,name = 'conv4')(pool3)
         dr4 = Dropout(dropout_size)(forward4)
         bn4 = BatchNormalization(axis=-1)(dr4) 
         pool4 = MaxPooling1D(3,strides = 2,padding='same')(bn4)

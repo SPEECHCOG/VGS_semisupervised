@@ -16,11 +16,11 @@ action_parameters = {
   "training_mode": True,
   "evaluating_mode": True,
   "save_model":True,
-  "save_best_recall" : True,
-  "save_best_loss" : False,
+  "save_best_recall" : False,
+  "save_best_loss" : True,
   "find_recall" : True,
-  "number_of_epochs" : 100,
-  "chunk_length":2000
+  "number_of_epochs" : 2,
+  "chunk_length":3000
 }
 
 feature_settings = {

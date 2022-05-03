@@ -4,7 +4,7 @@ import scipy.io
 from matplotlib import pyplot as plt
 import tensorflow as tf
 from tensorflow import keras
-from similarity_analysis import find_similar_pairs
+
 from data_preprocessing import prepare_XY , read_feature_filenames,  expand_feature_filenames2
 from utils import  prepare_triplet_data ,  triplet_loss , prepare_MMS_data , mms_loss, prepare_supervised_data , calculate_recallat10
 from model import VGS
@@ -103,12 +103,12 @@ class train_validate (VGS):
         self.split = 'train'
         self.set_feature_paths()
         self.prepare_feature_names()
-        for capID in range(5):
+        for capID in range(2):
             print('......... capID ...........' , str(capID))
             self.captionID = capID       
             Ynames_all, Xnames_all , Znames_all = self.prepare_chunked_names(self.captionID)
             number_of_chunks = len(Ynames_all)
-            for counter in range(number_of_chunks):
+            for counter in range(3) :#number_of_chunks):
                 print('......... chunk...........' , str(counter))
                 Ynames = Ynames_all [counter]
                 Xnames = Xnames_all [counter]
@@ -124,8 +124,7 @@ class train_validate (VGS):
                 if self.loss == "l2": 
                     Yin, Xin, target = prepare_supervised_data (Ydata, Xdata, Znames)
                     
-                history = self.vgs_model.fit([Yin, Xin ], target, shuffle=False, epochs=1,batch_size=120) 
-                history = self.vgs_model.fit([Yin, Xin ], target, shuffle=False, epochs=1,batch_size=120)                      
+                history = self.vgs_model.fit([Yin, Xin ], target, shuffle=True, epochs=1,batch_size=120) 
                 del Yin, Xin, Ydata, Xdata
                 training_output = history.history['loss'][0]
         return training_output
@@ -140,23 +139,28 @@ class train_validate (VGS):
         epoch_cum_recall_va = 0
         
         
-        for capID in range(5):
+        for capID in range(1):
+            print('......... capID ...........' , str(capID))
             self.captionID = capID       
             Ynames_all, Xnames_all , Znames_all = self.prepare_chunked_names(self.captionID)
             number_of_chunks = len(Ynames_all)
-            for counter in range(number_of_chunks):
-                print('......... capID...........' , str(capID))
-                Ynames = Ynames_all [counter]         
+            for counter in range(1):#number_of_chunks):
+                print('......... chunk...........' , str(counter))
+                Ynames = Ynames_all [counter]
                 Xnames = Xnames_all [counter]
                 Znames = Znames_all [counter]
+                #check = find_similar_pairs (Znames)
                 
                 Ydata, Xdata = prepare_XY (Ynames, Xnames , self.feature_path_audio , self.feature_path_image , self.length_sequence )
+                # Ydata, Xdata ..> (N, 14,14, 512), (N, 512,40)
                 if self.loss == "MMS":
-                    [Yin, Xin] , bin_target = prepare_MMS_data (Ydata, Xdata , shuffle_data = False)
+                    [Yin, Xin] , target = prepare_MMS_data (Ydata, Xdata , shuffle_data = False)
                 if self.loss == "Triplet":                   
-                    Yin, Xin, bin_target = prepare_triplet_data (Ydata, Xdata)
+                    Yin, Xin, target = prepare_triplet_data (Ydata, Xdata)
+                if self.loss == "l2": 
+                    Yin, Xin, target = prepare_supervised_data (Ydata, Xdata, Znames)
                     
-                loss = self.vgs_model.evaluate([Yin, Xin ], bin_target, batch_size=120) 
+                loss = self.vgs_model.evaluate([Yin, Xin ], target, batch_size=120) 
                 epoch_cum_val += loss
                 #............................................................. Recall
                 if self.find_recall:
@@ -177,8 +181,8 @@ class train_validate (VGS):
                     number_of_trials = 100
                     recall_av_vec = calculate_recallat10( audio_embeddings_mean, visual_embeddings_mean, number_of_trials,  number_of_samples , poolsize )          
                     recall_va_vec = calculate_recallat10( visual_embeddings_mean , audio_embeddings_mean, number_of_trials,  number_of_samples , poolsize ) 
-                    recall10_av = numpy.mean(recall_av_vec)/(poolsize)
-                    recall10_va = numpy.mean(recall_va_vec)/(poolsize)
+                    recall10_av = numpy.mean(recall_av_vec)/(number_of_trials)
+                    recall10_va = numpy.mean(recall_va_vec)/(number_of_trials)
                     epoch_cum_recall_av += recall10_av
                     epoch_cum_recall_va += recall10_va               
                     del Xdata, audio_embeddings

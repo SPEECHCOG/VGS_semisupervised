@@ -20,7 +20,7 @@ action_parameters = {
   "save_best_loss" : False,
   "find_recall" : True,
   "number_of_epochs" : 100,
-  "chunk_length":1000
+  "chunk_length":2000
 }
 
 feature_settings = {

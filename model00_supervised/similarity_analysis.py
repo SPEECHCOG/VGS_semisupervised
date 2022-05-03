@@ -7,7 +7,7 @@ from scipy import spatial
 import numpy
 from sent2vec.vectorizer import Vectorizer
 
-vectorizer = Vectorizer()
+vectorizer_obj = Vectorizer()
 #vectorizer = Vectorizer( pretrained_weights='bert-base-uncased')
 
 
@@ -41,41 +41,48 @@ vectorizer = Vectorizer()
 #..............................................................................
 
 
-def bert_distance (pairX, pairY):
-    list_of_sentences = [pairX, pairY]
-    vectorizer.bert(list_of_sentences)
+def bert_similarity (pairX, pairY):
     
-    vectors_bert = vectorizer.vectors
-    for i in range(vectors_bert):
-        vector1 = []
-        vector2 = []
+    vectorizer_obj.bert(pairX)    
+    vectors_bert_X = vectorizer_obj.vectors    
+    vectorizer_obj.vectors = []
+
+    vectorizer_obj.bert(pairY)    
+    vectors_bert_Y = vectorizer_obj.vectors    
+    vectorizer_obj.vectors = []
+    
+    cosine_similarity_all = []
+    for i in range(len(vectors_bert_X)):
+        vector1 = vectors_bert_X[i]
+        vector2 = vectors_bert_Y[i]
         cosine_similarity = 1 - spatial.distance.cosine(vector1, vector2)
-    
+        cosine_similarity_all.append(cosine_similarity)
     #dist = ss.distance.cdist( vectors_bert, vectors_bert ,  'cosine')
     #max_similarities = 1 - spatial.distance.cosine(vectors_bert[0],vectors_bert[1])
-    return cosine_similarity
+    return cosine_similarity_all
 
-def find_similar_pairs (list_of_sentences):
-    dist = bert_distance (list_of_sentences)
-    # vectors = vectorizer.vectors
-    # vectors = vectorizer.bert(list_of_sentences[0],list_of_sentences[1])
-    # vectors = numpy.array(vectors)
-    #dist = spatial.distance.cosine(vectors[0], vectors[1])
-    #dist = ss.distance.cdist( vectors,vectors ,  'cosine')
-    best = {}
-    best['best_pairs'] = []
-    best['similarity'] = []
-    for row in dist:
+# def find_similar_pairs (list_of_sentences):
+#     dist = bert_distance (list_of_sentences)
+#     # vectors = vectorizer.vectors
+#     # vectors = vectorizer.bert(list_of_sentences[0],list_of_sentences[1])
+#     # vectors = numpy.array(vectors)
+#     #dist = spatial.distance.cosine(vectors[0], vectors[1])
+#     #dist = ss.distance.cdist( vectors,vectors ,  'cosine')
+#     best = {}
+#     best['best_pairs'] = []
+#     best['similarity'] = []
+#     for row in dist:
 
-        #print(row)
-        best_similarity = numpy.sort(row)[1]
-        best_pair = numpy.argsort(row)[1]
-        best['similarity'].append(best_similarity)
-        best['best_pairs'].append(best_pair)      
-    return best    
+#         #print(row)
+#         best_similarity = numpy.sort(row)[1]
+#         best_pair = numpy.argsort(row)[1]
+#         best['similarity'].append(best_similarity)
+#         best['best_pairs'].append(best_pair)      
+#     return best    
 
 
-list_of_sentences = ['a blue sky','A man is passing by car', 'educational courses are there ready to be tought at this semester','I love dogs']
-list_of_sentences = ['A man is passing by car', 'I love dogs']
-best = find_similar_pairs(list_of_sentences)
-test_bert_distance = bert_distance (list_of_sentences)
+pairX = ['a blue sky','A man is passing by car', 'educational courses are there ready to be tought at this semester']
+
+pairY = ['a blue sky','educational courses are there ready to be tought at this semester' , 'A man is passing by car']
+
+cosine_similarity_all = bert_similarity (pairX, pairY)

@@ -130,17 +130,11 @@ def mms_loss(y_true , y_pred ):
                     # supervised similarity (bert) #
 ############################################################################### 
 
-from similarity_analysis import bert_distance
+from similarity_analysis import bert_similarity
 
 
 def find_y_true (pairs, similarity_type):
-    y_true = []
-    for pair in pairs:
-        if similarity_type =="bert":
-            distance_matrix = bert_distance(pairs)
-            distance_pair = distance_matrix[0,1]
-            y_true.append(distance_pair)     
-    return y_true
+    pass
             
 def prepare_supervised_data (Ydata, Xdata, Znames):
     
@@ -148,8 +142,9 @@ def prepare_supervised_data (Ydata, Xdata, Znames):
     orderX,orderY = randOrder(n_samples)
     pairX = [Znames [i] for i in orderX]
     pairY = [Znames [i] for i in orderY]
-    pairs = [[pairX [item] ,pairY[item]] for item in range(len(pairX))]
-    target_triplet = numpy.array(find_y_true(pairs, similarity_type = "bert")) 
+    cosine_similarity_all = bert_similarity (pairX, pairY)
+    target_triplet = numpy.array(cosine_similarity_all) 
+    target_triplet = target_triplet **10
     Ydata_triplet = Ydata[orderY]
     Xdata_triplet = Xdata[orderX]
     return Ydata_triplet, Xdata_triplet, target_triplet

@@ -223,11 +223,11 @@ class VGS:
         A = Reshape([out_speech_channel.shape[2]])(A) # (N, 512)
          
         A_e = Dense(512,activation='linear',name='dense_audio')(A)       
-        #A = Lambda(lambda  x: K.l2_normalize(x,axis=-1),name='out_audio')(A)
+        A_e = Lambda(lambda  x: K.l2_normalize(x,axis=-1),name='out_audio')(A_e)
         
         
         I_e = Dense(512,activation='linear',name='dense_visual')(I) 
-        #I = Lambda(lambda  x: K.l2_normalize(x,axis=-1),name='out_visual')(I)
+        I_e = Lambda(lambda  x: K.l2_normalize(x,axis=-1),name='out_visual')(I_e)
         
         # Gating
         # gate_size = 4096
